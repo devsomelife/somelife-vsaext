@@ -148,12 +148,38 @@ async function persist() {
 
 // Talks to the VSA tab. The content script only runs on the timesheet page, so
 // a missing receiver means the user is not on it.
+const VSA_TAB_URL = 'https://vsa.example.com/o_services/timesheetspivot*';
+
+const CONTENT_SCRIPTS = [
+  'src/content/selectors.js',
+  'src/content/widen.js',
+  'src/content/inject.js',
+  'src/content/main.js',
+];
+
+// After the extension is reloaded, tabs opened beforehand still run the old
+// content script, or none at all -- messaging them fails with "Receiving end
+// does not exist". Rather than make the user reload VSA, inject on demand and
+// retry once.
 async function sendToVsa(message) {
-  const [tab] = await chrome.tabs.query({
-    url: 'https://vsa.example.com/o_services/timesheetspivot/*',
-  });
-  if (!tab) throw new Error('Open the VSA timesheet page first.');
-  return chrome.tabs.sendMessage(tab.id, message);
+  const [tab] = await chrome.tabs.query({ url: VSA_TAB_URL });
+  if (!tab) throw new Error('Open the VSA timesheet page first, then retry.');
+
+  try {
+    return await chrome.tabs.sendMessage(tab.id, message);
+  } catch {
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: CONTENT_SCRIPTS,
+    });
+    try {
+      return await chrome.tabs.sendMessage(tab.id, message);
+    } catch (err) {
+      throw new Error(
+        `Could not reach the VSA page (${err.message}). Reload the timesheet tab and retry.`
+      );
+    }
+  }
 }
 
 $('add-row').addEventListener('click', () => {

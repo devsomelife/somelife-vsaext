@@ -29,6 +29,14 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 Injection never saves. It fills the form the same way clicking would, then you
 review and press Save in VSA yourself.
 
+### "Could not establish connection. Receiving end does not exist."
+
+The options page could not reach the content script in the VSA tab. It now
+re-injects the scripts and retries automatically, which covers the usual cause:
+a timesheet tab that was already open when the extension was reloaded.
+
+If it still fails, reload the timesheet tab.
+
 ### If sync does not work
 
 `tools/dump-catalog.js` does the same walk from the DevTools console, where
