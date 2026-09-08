@@ -38,17 +38,21 @@ export function totalDays(entries) {
   return entries.reduce((sum, e) => sum + Number(e.days || 0), 0);
 }
 
-// Rows are dropped when they carry no date or no project, so a half-filled
-// row in the editor never reaches storage.
+// Cleans a row in place. Rows are NOT dropped here: a half-filled row is a row
+// the user is still typing into, and discarding it would make it disappear from
+// under the cursor. Mutating rather than rebuilding also keeps the identity the
+// editor's event handlers hold, so edits keep landing on the stored object.
 export function normalize(rows) {
-  return rows
-    .filter((r) => r.date && r.project)
-    .map((r) => ({
-      date: r.date,
-      client: (r.client || '').trim(),
-      project: (r.project || '').trim(),
-      projectCode: r.projectCode,
-      days: Number(r.days) || 0,
-      note: (r.note || '').trim(),
-    }));
+  for (const r of rows) {
+    r.client = (r.client || '').trim();
+    r.project = (r.project || '').trim();
+    r.days = Number(r.days) || 0;
+    r.note = (r.note || '').trim();
+  }
+  return rows;
+}
+
+// Incomplete rows are excluded only at the point they would be sent to VSA.
+export function isComplete(entry) {
+  return Boolean(entry.date && entry.project && entry.days > 0);
 }

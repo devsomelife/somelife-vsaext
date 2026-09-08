@@ -1,4 +1,11 @@
-import { loadEntries, saveEntries, entriesForMonth, totalDays, normalize } from '../shared/store.js';
+import {
+  loadEntries,
+  saveEntries,
+  entriesForMonth,
+  totalDays,
+  normalize,
+  isComplete,
+} from '../shared/store.js';
 
 const $ = (id) => document.getElementById(id);
 const rowsEl = $('rows');
@@ -12,6 +19,11 @@ const todayMonth = new Date().toISOString().slice(0, 7);
 function say(msg, isError) {
   statusEl.textContent = msg;
   statusEl.style.color = isError ? '#c33' : '#2a7';
+}
+
+function daysInMonth(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m, 0).getDate();
 }
 
 function currentMonth() {
@@ -96,22 +108,31 @@ function rowTemplate(e) {
   projectSel.disabled = projectsFor(e.client).length === 0;
 
   for (const el of tr.querySelectorAll('[data-f]')) {
-    if (el.tagName !== 'SELECT') el.value = e[el.dataset.f] ?? '';
-    el.addEventListener('change', () => {
-      e[el.dataset.f] = el.value;
+    const field = el.dataset.f;
+    if (el.tagName !== 'SELECT') el.value = e[field] ?? '';
+
+    const apply = () => {
+      // Days is numeric; everything else is stored as typed.
+      e[field] = field === 'days' ? Number(el.value) || 0 : el.value;
+
       // Changing client invalidates any project from the previous one.
-      if (el.dataset.f === 'client') {
+      if (field === 'client') {
         fillProjects(tr, el.value);
         e.project = tr.querySelector('[data-f="project"]').value;
       }
       // The option value is recorded alongside the label so injection can match
       // the project even after VSA reworded it.
-      if (el.dataset.f === 'client' || el.dataset.f === 'project') {
+      if (field === 'client' || field === 'project') {
         e.projectCode = codeForProject(e.client, e.project);
       }
+      updateTotal();
       persist();
-      $('total').textContent = String(totalDays(entriesForMonth(entries, currentMonth())));
-    });
+    };
+
+    // `input` keeps the total live while typing; `change` also covers pickers
+    // and select keyboard navigation.
+    el.addEventListener('input', apply);
+    el.addEventListener('change', apply);
   }
 
   tr.querySelector('[data-act="del"]').addEventListener('click', () => {
@@ -122,10 +143,19 @@ function rowTemplate(e) {
   return tr;
 }
 
+function updateTotal() {
+  const shown = entriesForMonth(entries, currentMonth());
+  const complete = shown.filter(isComplete).length;
+  $('total').textContent = String(totalDays(shown));
+  $('row-count').textContent = shown.length
+    ? `${complete}/${shown.length} row(s) ready to inject`
+    : '';
+}
+
 function render() {
   const shown = entriesForMonth(entries, currentMonth());
   rowsEl.replaceChildren(...shown.map((e) => rowTemplate(e)));
-  $('total').textContent = String(totalDays(shown));
+  updateTotal();
 
   $('inject').disabled = catalog.length === 0;
 }
@@ -193,7 +223,20 @@ async function sendToVsa(message) {
 }
 
 $('add-row').addEventListener('click', () => {
-  entries.push({ date: `${currentMonth()}-01`, client: '', project: '', days: 1, note: '' });
+  // New rows follow the last one in the month so repeated adds stay in order,
+  // rather than all landing on the 1st.
+  const shown = entriesForMonth(entries, currentMonth());
+  const last = shown.at(-1);
+  const day = last ? Math.min(Number(last.date.slice(8, 10)) + 1, daysInMonth(currentMonth())) : 1;
+  entries.push({
+    date: `${currentMonth()}-${String(day).padStart(2, '0')}`,
+    client: last?.client ?? '',
+    project: last?.project ?? '',
+    projectCode: last?.projectCode,
+    days: 1,
+    note: '',
+  });
+  persist();
   render();
 });
 
@@ -211,7 +254,14 @@ $('fill-month').addEventListener('click', () => {
     if (dt.getDay() === 0 || dt.getDay() === 6) continue;
     const date = `${month}-${String(d).padStart(2, '0')}`;
     if (existing.has(date)) continue;
-    entries.push({ date, client: last.client, project: last.project, days: 1, note: '' });
+    entries.push({
+      date,
+      client: last.client,
+      project: last.project,
+      projectCode: last.projectCode,
+      days: 1,
+      note: '',
+    });
   }
   persist().then(render);
   say('Weekdays filled.');
@@ -278,8 +328,12 @@ $('sync').addEventListener('click', async () => {
 });
 
 $('inject').addEventListener('click', async () => {
-  const shown = entriesForMonth(entries, currentMonth());
-  if (!shown.length) return say('Nothing to inject for this month.', true);
+  const all = entriesForMonth(entries, currentMonth());
+  const shown = all.filter(isComplete);
+  const skipped = all.length - shown.length;
+  if (!shown.length) {
+    return say('Nothing complete to inject: each row needs a project and days.', true);
+  }
   say(`Injecting ${shown.length} entries...`);
   try {
     const res = await sendToVsa({ type: 'inject', entries: shown });
@@ -288,7 +342,11 @@ $('inject').addEventListener('click', async () => {
     if (bad.length) {
       say(`Injected with problems: ${bad.map((b) => `${b.client}/${b.project}: ${b.error}`).join('; ')}`, true);
     } else {
-      say(`Injected ${shown.length} entries. Review the grid, then press Save in VSA.`);
+      say(
+        `Injected ${shown.length} entries.` +
+          (skipped ? ` ${skipped} incomplete row(s) skipped.` : '') +
+          ' Review the grid, then press Save in VSA.'
+      );
     }
   } catch (err) {
     say(`Injection failed: ${err.message}`, true);
