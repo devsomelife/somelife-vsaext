@@ -7,7 +7,9 @@
 // Nothing is submitted; the user still presses Save.
 
 const SETTLE_MS = 400;
-const HOURS_PER_DAY = 7;
+// Lines in HOUR format take hours, so fractions of a day are converted. At 8,
+// the editor's 0.125 step is exactly one hour.
+const HOURS_PER_DAY = 8;
 const LIST_TIMEOUT_MS = 8000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));

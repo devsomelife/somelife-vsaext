@@ -96,7 +96,7 @@ function rowTemplate(e) {
     <td><input type="date" data-f="date"></td>
     <td><select data-f="client"></select></td>
     <td><select data-f="project"></select></td>
-    <td class="days"><input data-f="days" type="number" step="0.25" min="0" max="1"></td>
+    <td class="days"><input data-f="days" type="number" step="0.125" min="0" max="1"></td>
     <td><input data-f="note"></td>
     <td><button type="button" data-act="del">x</button></td>`;
 
