@@ -115,6 +115,13 @@ function render() {
   }
 }
 
+// The catalog lives in chrome.storage.local, so a synced list survives page
+// reloads, browser restarts and extension reloads. Every path that changes
+// `catalog` must go through here.
+async function saveCatalog() {
+  await chrome.storage.local.set({ catalog });
+}
+
 async function persist() {
   entries = normalize(entries);
   await saveEntries(entries);
@@ -173,7 +180,10 @@ $('import-file').addEventListener('change', async (e) => {
   try {
     const data = JSON.parse(await file.text());
     entries = normalize(data.entries || []);
-    if (data.catalog) catalog = data.catalog;
+    if (data.catalog) {
+      catalog = data.catalog;
+      await saveCatalog();
+    }
     await persist();
     render();
     say('Imported.');
@@ -188,7 +198,7 @@ $('sync').addEventListener('click', async () => {
     const res = await sendToVsa({ type: 'catalog' });
     if (!res?.ok) throw new Error(res?.error || 'no response');
     catalog = res.catalog;
-    await chrome.storage.local.set({ catalog });
+    await saveCatalog();
     render();
     const n = catalog.reduce((s, c) => s + c.projects.length, 0);
     say(`Catalog synced: ${catalog.length} clients, ${n} projects.`);

@@ -29,6 +29,14 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 Injection never saves. It fills the form the same way clicking would, then you
 review and press Save in VSA yourself.
 
+### Stored data
+
+Both the tracked entries and the client/project catalog live in
+`chrome.storage.local`, so they survive page reloads, browser restarts and
+extension reloads. You only need to re-sync when the project list changes on
+VSA's side. Uninstalling the extension clears it -- use `Export JSON` for a
+backup. Storage is local to this machine and never syncs to a Google account.
+
 ## Layout
 
 | Path | Role |
