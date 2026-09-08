@@ -25,38 +25,75 @@ function shiftMonth(delta) {
   render();
 }
 
-// Datalists let the client/project cells offer real VSA values while still
-// accepting free text, so the grid stays usable before a catalog sync.
-function datalists() {
-  const clients = catalog.map((c) => c.label);
-  const projects = [...new Set(catalog.flatMap((c) => c.projects.map((p) => p.label)))];
-  return { clients, projects };
+// Client and project are picked from the synced VSA catalog, never typed, so
+// an entry can only ever name a client/project pair VSA will actually accept.
+// A stored value that is no longer in the catalog is kept as a marked option
+// rather than silently dropped, so an old month stays readable after a resync.
+// Labels come from VSA, so they are escaped rather than trusted as markup.
+const esc = (s) =>
+  String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+function optionsHtml(values, selected, placeholder) {
+  const known = values.includes(selected);
+  const opts = [`<option value="">${esc(placeholder)}</option>`];
+  if (selected && !known) {
+    opts.push(`<option value="${esc(selected)}" selected>${esc(selected)} (not in catalog)</option>`);
+  }
+  for (const v of values) {
+    opts.push(`<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`);
+  }
+  return opts.join('');
 }
 
+function clientLabels() {
+  return catalog.map((c) => c.label);
+}
+
+// Projects are scoped to the selected client. With no client chosen there is
+// nothing valid to offer, so the project select stays empty and disabled.
 function projectsFor(clientLabel) {
   const c = catalog.find((x) => x.label === clientLabel);
-  return c ? c.projects.map((p) => p.label) : datalists().projects;
+  return c ? c.projects.map((p) => p.label) : [];
 }
 
-function rowTemplate(e, i) {
+function fillProjects(tr, client) {
+  const sel = tr.querySelector('[data-f="project"]');
+  const values = projectsFor(client);
+  const current = sel.value;
+  sel.innerHTML = optionsHtml(values, values.includes(current) ? current : '', 'Project...');
+  sel.disabled = values.length === 0;
+}
+
+function rowTemplate(e) {
   const tr = document.createElement('tr');
   tr.innerHTML = `
     <td><input type="date" data-f="date"></td>
-    <td><input data-f="client" list="dl-clients"></td>
-    <td><input data-f="project" list="dl-projects-${i}"><datalist id="dl-projects-${i}"></datalist></td>
+    <td><select data-f="client"></select></td>
+    <td><select data-f="project"></select></td>
     <td class="days"><input data-f="days" type="number" step="0.25" min="0" max="1"></td>
     <td><input data-f="note"></td>
     <td><button type="button" data-act="del">x</button></td>`;
 
+  const clientSel = tr.querySelector('[data-f="client"]');
+  clientSel.innerHTML = optionsHtml(clientLabels(), e.client || '', 'Client...');
+
+  const projectSel = tr.querySelector('[data-f="project"]');
+  projectSel.innerHTML = optionsHtml(projectsFor(e.client), e.project || '', 'Project...');
+  projectSel.disabled = projectsFor(e.client).length === 0;
+
   for (const el of tr.querySelectorAll('[data-f]')) {
-    el.value = e[el.dataset.f] ?? '';
+    if (el.tagName !== 'SELECT') el.value = e[el.dataset.f] ?? '';
     el.addEventListener('change', () => {
       e[el.dataset.f] = el.value;
-      if (el.dataset.f === 'client') fillProjects(tr, el.value, i);
+      // Changing client invalidates any project from the previous one.
+      if (el.dataset.f === 'client') {
+        fillProjects(tr, el.value);
+        e.project = tr.querySelector('[data-f="project"]').value;
+      }
       persist();
+      $('total').textContent = String(totalDays(entriesForMonth(entries, currentMonth())));
     });
   }
-  fillProjects(tr, e.client, i);
 
   tr.querySelector('[data-act="del"]').addEventListener('click', () => {
     entries.splice(entries.indexOf(e), 1);
@@ -66,26 +103,16 @@ function rowTemplate(e, i) {
   return tr;
 }
 
-function fillProjects(tr, client, i) {
-  const dl = tr.querySelector(`#dl-projects-${i}`);
-  if (!dl) return;
-  dl.innerHTML = projectsFor(client).map((p) => `<option value="${p}">`).join('');
-}
-
 function render() {
-  const month = currentMonth();
-  const shown = entriesForMonth(entries, month);
-
-  let dl = $('dl-clients');
-  if (!dl) {
-    dl = document.createElement('datalist');
-    dl.id = 'dl-clients';
-    document.body.append(dl);
-  }
-  dl.innerHTML = datalists().clients.map((c) => `<option value="${c}">`).join('');
-
-  rowsEl.replaceChildren(...shown.map(rowTemplate));
+  const shown = entriesForMonth(entries, currentMonth());
+  rowsEl.replaceChildren(...shown.map((e) => rowTemplate(e)));
   $('total').textContent = String(totalDays(shown));
+
+  const needsSync = catalog.length === 0;
+  $('inject').disabled = needsSync;
+  if (needsSync && shown.length) {
+    say('Sync clients & projects from VSA first to choose values.', true);
+  }
 }
 
 async function persist() {
