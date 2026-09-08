@@ -175,7 +175,9 @@ async function saveCatalog() {
 // project list never replaces a non-empty one -- that case is a failed lookup,
 // not a client whose projects genuinely disappeared.
 function mergeCatalog(previous, incoming) {
-  const byCode = new Map(previous.map((c) => [c.code, c]));
+  // Internal activities were synced by earlier versions; drop them so an
+  // existing catalog cleans itself up on the next sync.
+  const byCode = new Map(previous.filter((c) => !c.internal).map((c) => [c.code, c]));
   for (const c of incoming) {
     const old = byCode.get(c.code);
     const keepOld = old && old.projects.length > 0 && c.projects.length === 0;

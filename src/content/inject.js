@@ -271,24 +271,16 @@ async function fetchCatalog(onProgress, onPartial) {
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 
-  // Clients are exactly the options under <optgroup label="Customers">.
-  // Everything else is an internal activity: trackable, but with no projects,
-  // so probing it would only burn a timeout.
-  const inCustomers = new Set(
-    [...act.querySelectorAll('optgroup')]
-      .filter((g) => g.label.trim() === VSA.customersGroupLabel)
-      .flatMap((g) => [...g.querySelectorAll('option')].map((o) => o.value))
-  );
-
-  const all = [...act.options]
+  // Only the options under <optgroup label="Customers"> are synced. The other
+  // options are internal activities (Absence, Formation...) and are left out
+  // of the catalog entirely.
+  const clients = [...act.querySelectorAll('optgroup')]
+    .filter((g) => g.label.trim() === VSA.customersGroupLabel)
+    .flatMap((g) => [...g.querySelectorAll('option')])
     .map((o) => ({ label: o.text.trim(), code: o.value }))
-    .filter((c) => c.code && c.code !== 'I-INTERNE');
+    .filter((c) => c.code);
 
-  const catalog = all
-    .filter((c) => !inCustomers.has(c.code))
-    .map((c) => ({ ...c, internal: true, projects: [] }));
-
-  const clients = all.filter((c) => inCustomers.has(c.code));
+  const catalog = [];
 
   for (let i = 0; i < clients.length; i++) {
     const c = clients[i];
@@ -301,12 +293,11 @@ async function fetchCatalog(onProgress, onPartial) {
       const sel = await waitForProjects(row, before);
       catalog.push({
         ...c,
-        internal: false,
         projects: readProjects(sel),
         ...(sel ? {} : { error: 'project list did not load' }),
       });
     } catch (err) {
-      catalog.push({ ...c, internal: false, projects: [], error: String(err.message || err) });
+      catalog.push({ ...c, projects: [], error: String(err.message || err) });
     }
     // Hand back what we have after every client, so closing the options page
     // mid-sync keeps the work already done instead of discarding all of it.
@@ -318,12 +309,8 @@ async function fetchCatalog(onProgress, onPartial) {
   return sortCatalog(catalog);
 }
 
-// Clients first, then internal activities; alphabetical within each group.
 function sortCatalog(catalog) {
-  return [...catalog].sort((a, b) => {
-    if (a.internal !== b.internal) return a.internal ? 1 : -1;
-    return a.label.localeCompare(b.label);
-  });
+  return [...catalog].sort((a, b) => a.label.localeCompare(b.label));
 }
 
 globalThis.VsaInject = {

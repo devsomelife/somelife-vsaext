@@ -5,42 +5,54 @@
 // Restores the original selection when done. Saves nothing in VSA.
 (async () => {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const fingerprint = (el) => (el ? [...el.options].map((o) => o.value).join('|') : '');
+  // Headers are optgroups (flattened by .options); "none" is the placeholder.
+  const readProjects = (sel) =>
+    [...sel.options]
+      .filter((o) => o.value && o.value !== 'none' && !o.disabled)
+      .map((o) => ({
+        label: o.text.trim(),
+        code: o.value,
+        group: o.parentElement?.tagName === 'OPTGROUP' ? o.parentElement.label : undefined,
+      }));
   const act = document.querySelector('select.selectTimesheetLine[id^="tiers_"]');
   if (!act) return console.error('No timesheet line found. Is the grid loaded?');
 
   const row = act.id.replace(/^tiers_/, '');
-  const projSel = () => document.getElementById(`complete_line_${row}`);
+  // The project list is select.select_order, whose id is random -- find it by
+  // name. (#complete_line_<row> exists but is never populated.)
+  const projSel = () =>
+    document.querySelector(`select.select_order[name="line[${row}][order_id]"]`);
   const original = act.value;
 
-  const all = [...act.options]
+  // Only customers are collected; internal activities are ignored.
+  const clients = [...act.querySelectorAll('optgroup')]
+    .filter((g) => g.label.trim() === 'Customers')
+    .flatMap((g) => [...g.querySelectorAll('option')])
     .map((o) => ({ label: o.text.trim(), code: o.value }))
-    .filter((c) => c.code && c.code !== 'I-INTERNE');
-
-  const clients = all.filter((c) => c.code.startsWith('C-'));
-  const internal = all.filter((c) => !c.code.startsWith('C-'))
-    .map((c) => ({ ...c, internal: true, projects: [] }));
+    .filter((c) => c.code);
 
   console.log(`Reading ${clients.length} clients...`);
-  const out = [...internal];
+  const out = [];
 
   for (const [i, c] of clients.entries()) {
+    const before = fingerprint(projSel());
     act.value = c.code;
     if (typeof act.onchange === 'function') act.onchange();
     else act.dispatchEvent(new Event('change', { bubbles: true }));
 
-    // Wait until the project select is both populated and visible.
+    // Wait for the list to actually change: the previous client's projects stay
+    // in the DOM briefly, and reading those would mis-attribute them.
     const started = Date.now();
     let sel = null;
     while (Date.now() - started < 15000) {
       const el = projSel();
-      if (el && el.options.length > 0 && el.offsetParent !== null) { sel = el; break; }
+      if (el && fingerprint(el) !== before) { sel = el; break; }
       await sleep(150);
     }
 
-    const projects = sel
-      ? [...sel.options].map((o) => ({ label: o.text.trim(), code: o.value })).filter((p) => p.code)
-      : [];
-    out.push({ ...c, internal: false, projects });
+    const projects = sel ? readProjects(sel) : [];
+    out.push({ ...c, projects });
     console.log(`${i + 1}/${clients.length} ${c.label}: ${projects.length} projects${sel ? '' : ' (TIMED OUT)'}`);
   }
 
