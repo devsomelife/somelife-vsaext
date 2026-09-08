@@ -1,0 +1,21 @@
+/* Goal 1: make a narrow select readable while it is open.
+   VSA pins the line selects to the ~208px first column, which truncates
+   project labels like "BS-26-000086 [Projet Princi...". */
+
+select.vsaext-wide {
+  position: relative;
+  z-index: 9999;
+  min-width: 640px !important;
+  max-width: 90vw !important;
+  width: auto !important;
+}
+
+/* The option list inherits the widened box, but Chrome sizes the popup from
+   the element, so the class alone is enough. Keep text from clipping. */
+select.vsaext-wide option {
+  white-space: normal;
+}
+
+.vsaext-toggle {
+  cursor: pointer;
+}
