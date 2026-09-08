@@ -1,10 +1,22 @@
 :root { color-scheme: light dark; }
-body { font: 14px system-ui, sans-serif; margin: 24px; max-width: 900px; }
+body { font: 14px system-ui, sans-serif; margin: 24px; }
 header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
 h1 { font-size: 18px; margin: 0; }
 .month-nav { display: flex; gap: 4px; align-items: center; }
-table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+/* Fixed layout so the widths below are honoured instead of being derived from
+   content: project labels are long enough to starve every other column. */
+table { border-collapse: collapse; width: 100%; margin-top: 16px; table-layout: fixed; }
+
+/* Every column is sized, except project which takes whatever is left. */
+col.c-date { width: 130px; }
+col.c-client { width: 240px; }
+col.c-project { width: auto; }
+col.c-days { width: 80px; }
+col.c-note { width: 220px; }
+col.c-del { width: 40px; }
 th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+/* Long project labels must not force the table wider than the viewport. */
+td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 th { background: rgba(128,128,128,.15); font-weight: 600; }
 td input { width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; }
 td input:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
@@ -17,7 +29,7 @@ button { font: inherit; padding: 6px 12px; cursor: pointer; }
 .vsa-actions { border-top: 1px solid #ccc; padding-top: 16px; }
 button.primary { background: #2a7; color: #fff; border: 1px solid #248; font-weight: 600; }
 
-td select { width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; }
+td select { width: 100%; max-width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; }
 td select:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
 td select:disabled { color: #999; }
 button:disabled { opacity: .5; cursor: not-allowed; }

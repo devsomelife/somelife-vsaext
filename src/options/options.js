@@ -106,6 +106,8 @@ function rowTemplate(e) {
   const projectSel = tr.querySelector('[data-f="project"]');
   projectSel.innerHTML = optionsHtml(projectsFor(e.client), e.project || '', 'Project...');
   projectSel.disabled = projectsFor(e.client).length === 0;
+  // Labels are longer than the column, so the full text is available on hover.
+  projectSel.title = e.project || '';
 
   for (const el of tr.querySelectorAll('[data-f]')) {
     const field = el.dataset.f;
@@ -124,6 +126,7 @@ function rowTemplate(e) {
       // the project even after VSA reworded it.
       if (field === 'client' || field === 'project') {
         e.projectCode = codeForProject(e.client, e.project);
+        tr.querySelector('[data-f="project"]').title = e.project || '';
       }
       updateTotal();
       persist();
