@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>VSA Ext</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <header>
+    <h1>Shadow Tracking</h1>
+    <div class="month-nav">
+      <button id="prev-month" type="button">&lt;</button>
+      <input id="month" type="month">
+      <button id="next-month" type="button">&gt;</button>
+    </div>
+  </header>
+
+  <table id="grid">
+    <thead>
+      <tr>
+        <th>Date</th><th>Client</th><th>Project</th><th>Days</th><th>Note</th><th></th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+    <tfoot>
+      <tr><td colspan="3">Total</td><td id="total">0</td><td colspan="2"></td></tr>
+    </tfoot>
+  </table>
+
+  <div class="actions">
+    <button id="add-row" type="button">Add row</button>
+    <button id="fill-month" type="button">Fill weekdays</button>
+    <button id="export" type="button">Export JSON</button>
+    <button id="import" type="button">Import JSON</button>
+    <input id="import-file" type="file" accept="application/json" hidden>
+  </div>
+
+  <div class="actions vsa-actions">
+    <button id="sync" type="button">Sync clients &amp; projects from VSA</button>
+    <button id="inject" type="button" class="primary">Inject this month into VSA</button>
+  </div>
+
+  <p id="status" role="status"></p>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

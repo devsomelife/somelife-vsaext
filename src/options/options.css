@@ -1,0 +1,18 @@
+:root { color-scheme: light dark; }
+body { font: 14px system-ui, sans-serif; margin: 24px; max-width: 900px; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+h1 { font-size: 18px; margin: 0; }
+.month-nav { display: flex; gap: 4px; align-items: center; }
+table { border-collapse: collapse; width: 100%; margin-top: 16px; }
+th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+th { background: rgba(128,128,128,.15); font-weight: 600; }
+td input { width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; }
+td input:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
+td.days, td.days input { text-align: right; }
+tfoot td { font-weight: 600; }
+.actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+button { font: inherit; padding: 6px 12px; cursor: pointer; }
+#status { min-height: 1.2em; color: #2a7; }
+
+.vsa-actions { border-top: 1px solid #ccc; padding-top: 16px; }
+button.primary { background: #2a7; color: #fff; border: 1px solid #248; font-weight: 600; }
