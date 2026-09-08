@@ -240,42 +240,49 @@ $('add-row').addEventListener('click', () => {
   render();
 });
 
-// Weekday fill: seeds one entry per working day, copying the last row's
-// client/project so a full month is two clicks away.
-$('fill-month').addEventListener('click', () => {
-  const month = currentMonth();
-  const [y, m] = month.split('-').map(Number);
-  const last = entriesForMonth(entries, month).at(-1) || { client: '', project: '' };
-  const days = new Date(y, m, 0).getDate();
-  const existing = new Set(entriesForMonth(entries, month).map((e) => e.date));
-
-  for (let d = 1; d <= days; d++) {
-    const dt = new Date(y, m - 1, d);
-    if (dt.getDay() === 0 || dt.getDay() === 6) continue;
-    const date = `${month}-${String(d).padStart(2, '0')}`;
-    if (existing.has(date)) continue;
-    entries.push({
-      date,
-      client: last.client,
-      project: last.project,
-      projectCode: last.projectCode,
-      days: 1,
-      note: '',
-    });
-  }
-  persist().then(render);
-  say('Weekdays filled.');
-});
-
-$('export').addEventListener('click', async () => {
-  const blob = new Blob([JSON.stringify({ entries, catalog }, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  await chrome.downloads.download({ url, filename: 'vsa-shadow-tracking.json' }).catch(() => {
+async function download(content, filename, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
+  await chrome.downloads.download({ url, filename }).catch(() => {
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'vsa-shadow-tracking.json';
+    a.download = filename;
     a.click();
   });
+}
+
+// Quoted only when needed, with embedded quotes doubled, per RFC 4180.
+// Project labels routinely contain commas and brackets.
+function csvCell(value) {
+  const v = value == null ? '' : String(value);
+  return /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+}
+
+function toCsv(rows) {
+  const cols = ['date', 'client', 'project', 'projectCode', 'days', 'note'];
+  const lines = [cols.join(',')];
+  for (const r of rows) {
+    lines.push(cols.map((c) => csvCell(r[c])).join(','));
+  }
+  // CRLF and a BOM so Excel opens accented client names correctly.
+  return '\ufeff' + lines.join('\r\n') + '\r\n';
+}
+
+$('export').addEventListener('click', async () => {
+  await download(
+    JSON.stringify({ entries, catalog }, null, 2),
+    'vsa-shadow-tracking.json',
+    'application/json'
+  );
+});
+
+// CSV covers the current month only -- it is for reading and sharing, unlike
+// the JSON export which is a full backup and can be imported back.
+$('export-csv').addEventListener('click', async () => {
+  const month = currentMonth();
+  const shown = entriesForMonth(entries, month);
+  if (!shown.length) return say('Nothing to export for this month.', true);
+  await download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
+  say(`Exported ${shown.length} rows for ${month}.`);
 });
 
 $('import').addEventListener('click', () => $('import-file').click());
