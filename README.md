@@ -82,7 +82,14 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
 - `select#tiers_<row>` activity/client, inline
   `onchange="getBdc(<row>,'UITimesheetPivot',<ctx>,this.value)"` loads projects
   over `GET /service.php`.
-- `select#complete_line_<row>` project, empty until an activity is chosen.
+- `select.select_order[name="line[<row>][order_id]"]` is the project ("mission /
+  project") list, refilled after the client changes. Its id is random
+  (e.g. `fa3002b5`) so it must be found by name. Note `#complete_line_<row>`
+  also exists but is never populated -- it is not the project select.
+  Projects sit under optgroup headers ("Fixed-price contracts", "Time-based
+  contracts") and the list starts with a `none` placeholder.
+- Clients are the options under `<optgroup label="Customers">`; the other
+  options are internal activities with no projects.
 - `input#input_day_((<row>))_[[<n>]]` day value, `input#input_hour_...` hours.
 - `input#input_format_<row>` is `HOUR` or `DAY` and decides which of the two
   fields is authoritative for that line.
