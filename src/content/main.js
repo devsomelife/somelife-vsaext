@@ -1,5 +1,10 @@
 // Entry point: installs the widen behaviour and answers requests from the
 // options page. Nothing here submits the timesheet; Save stays manual.
+//
+// The options page re-injects these files when a tab predates an extension
+// reload, so this guard keeps a second run from installing duplicate listeners.
+if (!globalThis.__vsaExtLoaded) {
+  globalThis.__vsaExtLoaded = true;
 
 VsaWiden.installWiden();
 
@@ -31,3 +36,5 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   return false;
 });
+
+}
