@@ -3,6 +3,8 @@
 Local Chrome extension for the VSA timesheet pivot page
 (`https://vsa.example.com/o_services/timesheetspivot/`).
 
+User documentation (French): [docs/guide.html](docs/guide.html).
+
 ## Sharing
 
 `./tools/package.sh` builds `vsa-ext-<version>.zip` with just the runtime files
