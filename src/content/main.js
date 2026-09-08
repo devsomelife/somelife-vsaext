@@ -17,7 +17,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 
   if (msg?.type === 'catalog') {
-    VsaInject.fetchCatalog((p) => chrome.runtime.sendMessage({ type: 'catalog-progress', ...p }).catch(() => {}))
+    const post = (m) => chrome.runtime.sendMessage(m).catch(() => {});
+    VsaInject.fetchCatalog(
+      (p) => post({ type: 'catalog-progress', ...p }),
+      // Partial results are pushed as they arrive so the options page can save
+      // each step; a sync interrupted halfway still keeps what it found.
+      (catalog) => post({ type: 'catalog-partial', catalog })
+    )
       .then((catalog) => sendResponse({ ok: true, catalog }))
       .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true; // async

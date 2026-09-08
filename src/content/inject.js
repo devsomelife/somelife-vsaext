@@ -8,20 +8,22 @@
 
 const SETTLE_MS = 400;
 const HOURS_PER_DAY = 7;
-const LIST_TIMEOUT_MS = 15000;
+const LIST_TIMEOUT_MS = 8000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// VSA loads the project list asynchronously after the activity changes, so we
-// poll the dependent select instead of guessing a fixed delay.
+// VSA loads the project list asynchronously and reveals the select only once
+// it has options; while it is empty the element stays display:none. Polling
+// visibility therefore separates "loaded but empty" from "still loading",
+// which counting options alone cannot do.
 async function waitForOptions(sel, timeout = LIST_TIMEOUT_MS) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
     const el = document.querySelector(sel);
-    if (el && el.options.length > 0) return el;
-    await sleep(150);
+    if (el && el.options.length > 0 && el.offsetParent !== null) return el;
+    await sleep(120);
   }
-  return null;
+  return document.querySelector(sel);
 }
 
 function fire(el, type) {
@@ -139,19 +141,25 @@ async function injectEntries(entries) {
 // Catalog sync: walk every client in the activity dropdown and collect the
 // project list VSA returns for it. Uses the first line as a scratch row and
 // restores its original value afterwards.
-async function fetchCatalog(onProgress) {
+async function fetchCatalog(onProgress, onPartial) {
   const row = VSA.allRows()[0];
   if (!row) throw new Error('no timesheet line on this page');
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 
-  // Codes starting with "I-" are internal activities (Absence, Formation...)
-  // and carry no project list; "C-" codes are real clients.
-  const clients = [...act.options]
+  // Only "C-" codes are clients with a project list behind them. "I-" codes are
+  // internal activities (Absence, Formation...) which are still trackable but
+  // have no projects, so probing them would just burn one timeout each.
+  const all = [...act.options]
     .map((o) => ({ label: o.text.trim(), code: o.value }))
     .filter((c) => c.code && c.code !== 'I-INTERNE');
 
-  const catalog = [];
+  const catalog = all
+    .filter((c) => !c.code.startsWith('C-'))
+    .map((c) => ({ ...c, internal: true, projects: [] }));
+
+  const clients = all.filter((c) => c.code.startsWith('C-'));
+
   for (let i = 0; i < clients.length; i++) {
     const c = clients[i];
     if (onProgress) onProgress({ index: i + 1, total: clients.length, client: c.label });
@@ -163,15 +171,26 @@ async function fetchCatalog(onProgress) {
       const projects = sel
         ? [...sel.options].map((o) => ({ label: o.text.trim(), code: o.value })).filter((p) => p.code)
         : [];
-      catalog.push({ ...c, projects });
+      catalog.push({ ...c, internal: false, projects });
     } catch (err) {
-      catalog.push({ ...c, projects: [], error: String(err.message || err) });
+      catalog.push({ ...c, internal: false, projects: [], error: String(err.message || err) });
     }
+    // Hand back what we have after every client, so closing the options page
+    // mid-sync keeps the work already done instead of discarding all of it.
+    if (onPartial) onPartial(sortCatalog(catalog));
   }
 
   act.value = original;
   if (typeof act.onchange === 'function') act.onchange();
-  return catalog;
+  return sortCatalog(catalog);
+}
+
+// Clients first, then internal activities; alphabetical within each group.
+function sortCatalog(catalog) {
+  return [...catalog].sort((a, b) => {
+    if (a.internal !== b.internal) return a.internal ? 1 : -1;
+    return a.label.localeCompare(b.label);
+  });
 }
 
 globalThis.VsaInject = { injectEntries, fetchCatalog, writeDay, groupByLine };
