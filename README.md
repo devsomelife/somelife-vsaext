@@ -3,6 +3,16 @@
 Local Chrome extension for the VSA timesheet pivot page
 (`https://vsa.example.com/o_services/timesheetspivot/`).
 
+## Sharing
+
+`./tools/package.sh` builds `vsa-ext-<version>.zip` with just the runtime files
+(no git metadata, README or tools). Send that zip; the recipient unzips it and
+loads the folder as below.
+
+Chrome cannot install a zip directly -- it must be unzipped first, and the
+folder has to stay put, since "Load unpacked" references it on disk rather than
+copying it. Bump `version` in `manifest.json` when sharing an update.
+
 ## Install
 
 1. Chrome -> `chrome://extensions`
