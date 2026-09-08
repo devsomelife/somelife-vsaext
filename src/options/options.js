@@ -339,8 +339,14 @@ $('inject').addEventListener('click', async () => {
     const res = await sendToVsa({ type: 'inject', entries: shown });
     if (!res?.ok) throw new Error(res?.error || 'no response');
     const bad = res.report.filter((r) => !r.ok);
+    const lines = `${res.prepared}/${res.total} lines prepared`;
     if (bad.length) {
-      say(`Injected with problems: ${bad.map((b) => `${b.client}/${b.project}: ${b.error}`).join('; ')}`, true);
+      say(
+        `${lines}. Failed: ` +
+          bad.map((b) => `${b.client} -> ${b.error}`).join('; ') +
+          '. No days were written for those lines.',
+        true
+      );
     } else {
       say(
         `Injected ${shown.length} entries.` +
@@ -356,6 +362,13 @@ $('inject').addEventListener('click', async () => {
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'catalog-progress') {
     say(`Syncing ${msg.index}/${msg.total}: ${msg.client}`);
+  }
+  if (msg?.type === 'inject-progress') {
+    say(
+      msg.phase === 'structure'
+        ? `Step 1/2, preparing lines ${msg.index}/${msg.total}: ${msg.client}`
+        : `Step 2/2, writing days ${msg.index}/${msg.total}: ${msg.client}`
+    );
   }
   // Saved and rendered per client, so progress is visible and survives the
   // options page being closed mid-sync.
