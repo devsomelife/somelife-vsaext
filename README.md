@@ -99,8 +99,8 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
   also exists but is never populated -- it is not the project select.
   Projects sit under optgroup headers ("Fixed-price contracts", "Time-based
   contracts") and the list starts with a `none` placeholder.
-- Clients are the options under `<optgroup label="Customers">`; the other
-  options are internal activities with no projects.
+- Clients are the options under `<optgroup label="Customers">`. Only these are
+  synced; internal activities (Absence, Formation, Intercontrat...) are ignored.
 - `input#input_day_((<row>))_[[<n>]]` day value, `input#input_hour_...` hours.
 - `input#input_format_<row>` is `HOUR` or `DAY` and decides which of the two
   fields is authoritative for that line.
