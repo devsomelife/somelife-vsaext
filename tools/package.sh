@@ -15,6 +15,7 @@ zip -r -q "$out" \
   manifest.json \
   src \
   icons \
+  docs/guide.html \
   -x '*.DS_Store' '*/.*'
 
 echo "$out ($(du -h "$out" | cut -f1))"
