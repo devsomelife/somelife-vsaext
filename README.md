@@ -29,6 +29,16 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 Injection never saves. It fills the form the same way clicking would, then you
 review and press Save in VSA yourself.
 
+### If sync does not work
+
+`tools/dump-catalog.js` does the same walk from the DevTools console, where
+VSA's requests behave normally. Open the timesheet page, paste the file into the
+console, let it run, and it copies a JSON catalog to the clipboard. Save that as
+a `.json` file and load it with `Import JSON`.
+
+Import is per-section: a catalog-only file leaves tracked entries untouched, and
+an entries-only file leaves the catalog untouched.
+
 ### Stored data
 
 Both the tracked entries and the client/project catalog live in

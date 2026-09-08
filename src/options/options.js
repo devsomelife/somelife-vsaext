@@ -175,16 +175,27 @@ $('import-file').addEventListener('change', async (e) => {
   if (!file) return;
   try {
     const data = JSON.parse(await file.text());
-    entries = normalize(data.entries || []);
-    if (data.catalog) {
+    const parts = [];
+    // A catalog-only file (from tools/dump-catalog.js) must not wipe tracked
+    // entries, so each half is replaced only when the file actually carries it.
+    if (Array.isArray(data.entries)) {
+      entries = normalize(data.entries);
+      await persist();
+      parts.push(`${entries.length} entries`);
+    }
+    if (Array.isArray(data.catalog)) {
       catalog = data.catalog;
       await saveCatalog();
+      const n = catalog.reduce((s, c) => s + c.projects.length, 0);
+      parts.push(`${catalog.length} clients, ${n} projects`);
     }
-    await persist();
     render();
-    say('Imported.');
+    say(parts.length ? `Imported ${parts.join(' and ')}.` : 'Nothing to import in that file.', !parts.length);
   } catch (err) {
     say(`Import failed: ${err.message}`, true);
+  } finally {
+    // Cleared so re-picking the same file fires `change` again.
+    e.target.value = '';
   }
 });
 
