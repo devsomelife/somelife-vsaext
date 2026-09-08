@@ -108,11 +108,7 @@ function render() {
   rowsEl.replaceChildren(...shown.map((e) => rowTemplate(e)));
   $('total').textContent = String(totalDays(shown));
 
-  const needsSync = catalog.length === 0;
-  $('inject').disabled = needsSync;
-  if (needsSync && shown.length) {
-    say('Sync clients & projects from VSA first to choose values.', true);
-  }
+  $('inject').disabled = catalog.length === 0;
 }
 
 // The catalog lives in chrome.storage.local, so a synced list survives page
@@ -229,6 +225,13 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'catalog-progress') {
     say(`Syncing ${msg.index}/${msg.total}: ${msg.client}`);
   }
+  // Saved and rendered per client, so progress is visible and survives the
+  // options page being closed mid-sync.
+  if (msg?.type === 'catalog-partial') {
+    catalog = msg.catalog;
+    saveCatalog();
+    render();
+  }
 });
 
 $('month').addEventListener('change', render);
@@ -240,4 +243,10 @@ $('next-month').addEventListener('click', () => shiftMonth(1));
   entries = await loadEntries();
   catalog = (await chrome.storage.local.get('catalog')).catalog || [];
   render();
+  if (catalog.length === 0) {
+    say('Open the VSA timesheet page, then sync clients & projects to start.', true);
+  } else {
+    const n = catalog.reduce((s, c) => s + c.projects.length, 0);
+    say(`${catalog.length} clients and ${n} projects loaded.`);
+  }
 })();
