@@ -39,6 +39,15 @@ a `.json` file and load it with `Import JSON`.
 Import is per-section: a catalog-only file leaves tracked entries untouched, and
 an entries-only file leaves the catalog untouched.
 
+### Re-syncing
+
+Sync merges into the existing catalog rather than replacing it. A client whose
+lookup fails or times out keeps the projects an earlier sync found, so a bad
+run cannot erase good data; the status line reports how many were kept that way.
+
+Because merging never deletes, a client removed in VSA stays in the list.
+`Reset catalog` clears it for a clean rebuild. Tracked entries are untouched.
+
 ### Stored data
 
 Both the tracked entries and the client/project catalog live in

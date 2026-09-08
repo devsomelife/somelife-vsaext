@@ -49,6 +49,15 @@ function clientLabels() {
   return catalog.map((c) => c.label);
 }
 
+// Merging never deletes, so a client removed in VSA would linger forever.
+// Reset drops everything and forces a clean rebuild on the next sync.
+async function resetCatalog() {
+  catalog = [];
+  await saveCatalog();
+  render();
+  say('Catalog cleared. Run a sync to rebuild it.');
+}
+
 // Projects are scoped to the selected client. With no client chosen there is
 // nothing valid to offer, so the project select stays empty and disabled.
 function projectsFor(clientLabel) {
@@ -116,6 +125,20 @@ function render() {
 // `catalog` must go through here.
 async function saveCatalog() {
   await chrome.storage.local.set({ catalog });
+}
+
+// A sync that fails or times out for one client must not erase what an earlier
+// successful sync found for it. Incoming data wins, except that an empty
+// project list never replaces a non-empty one -- that case is a failed lookup,
+// not a client whose projects genuinely disappeared.
+function mergeCatalog(previous, incoming) {
+  const byCode = new Map(previous.map((c) => [c.code, c]));
+  for (const c of incoming) {
+    const old = byCode.get(c.code);
+    const keepOld = old && old.projects.length > 0 && c.projects.length === 0;
+    byCode.set(c.code, keepOld ? { ...c, projects: old.projects, stale: true } : c);
+  }
+  return [...byCode.values()];
 }
 
 async function persist() {
@@ -204,11 +227,15 @@ $('sync').addEventListener('click', async () => {
   try {
     const res = await sendToVsa({ type: 'catalog' });
     if (!res?.ok) throw new Error(res?.error || 'no response');
-    catalog = res.catalog;
+    catalog = mergeCatalog(catalog, res.catalog);
     await saveCatalog();
     render();
     const n = catalog.reduce((s, c) => s + c.projects.length, 0);
-    say(`Catalog synced: ${catalog.length} clients, ${n} projects.`);
+    const stale = catalog.filter((c) => c.stale).length;
+    say(
+      `Catalog synced: ${catalog.length} clients, ${n} projects.` +
+        (stale ? ` ${stale} kept from a previous sync (lookup failed this time).` : '')
+    );
   } catch (err) {
     say(`Sync failed: ${err.message}`, true);
   }
@@ -239,9 +266,17 @@ chrome.runtime.onMessage.addListener((msg) => {
   // Saved and rendered per client, so progress is visible and survives the
   // options page being closed mid-sync.
   if (msg?.type === 'catalog-partial') {
-    catalog = msg.catalog;
+    catalog = mergeCatalog(catalog, msg.catalog);
     saveCatalog();
     render();
+  }
+});
+
+$('reset-catalog').addEventListener('click', () => {
+  const n = catalog.length;
+  if (!n) return say('Catalog is already empty.');
+  if (confirm(`Clear all ${n} clients and their projects?\n\nTracked entries are not affected.`)) {
+    resetCatalog();
   }
 });
 
