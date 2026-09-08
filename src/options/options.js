@@ -60,6 +60,11 @@ async function resetCatalog() {
 
 // Projects are scoped to the selected client. With no client chosen there is
 // nothing valid to offer, so the project select stays empty and disabled.
+function codeForProject(clientLabel, projectLabel) {
+  const c = catalog.find((x) => x.label === clientLabel);
+  return c?.projects.find((p) => p.label === projectLabel)?.code;
+}
+
 function projectsFor(clientLabel) {
   const c = catalog.find((x) => x.label === clientLabel);
   return c ? c.projects.map((p) => p.label) : [];
@@ -98,6 +103,11 @@ function rowTemplate(e) {
       if (el.dataset.f === 'client') {
         fillProjects(tr, el.value);
         e.project = tr.querySelector('[data-f="project"]').value;
+      }
+      // The option value is recorded alongside the label so injection can match
+      // the project even after VSA reworded it.
+      if (el.dataset.f === 'client' || el.dataset.f === 'project') {
+        e.projectCode = codeForProject(e.client, e.project);
       }
       persist();
       $('total').textContent = String(totalDays(entriesForMonth(entries, currentMonth())));

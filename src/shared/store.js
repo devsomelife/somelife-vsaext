@@ -1,7 +1,11 @@
 // Shadow tracking data model.
 //
 // An entry is one day of time on one activity line:
-//   { date: "2026-09-08", client: "NORTHWIND TRADING", project: "BS-26-000112", days: 1, note: "" }
+//   { date: "2026-09-08", client: "NORTHWIND TRADING",
+//     project: "BS-26-000087 [...]", projectCode: "10001|ATE", days: 1, note: "" }
+//
+// `projectCode` is the VSA option value; it is what injection matches on, since
+// project labels drift as days are booked against them.
 //
 // `days` is expressed the way VSA does: fractions of a day (1, 0.5, 0.25...).
 
@@ -43,6 +47,7 @@ export function normalize(rows) {
       date: r.date,
       client: (r.client || '').trim(),
       project: (r.project || '').trim(),
+      projectCode: r.projectCode,
       days: Number(r.days) || 0,
       note: (r.note || '').trim(),
     }));

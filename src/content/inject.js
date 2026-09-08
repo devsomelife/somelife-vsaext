@@ -12,18 +12,33 @@ const LIST_TIMEOUT_MS = 8000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// VSA loads the project list asynchronously and reveals the select only once
-// it has options; while it is empty the element stays display:none. Polling
-// visibility therefore separates "loaded but empty" from "still loading",
-// which counting options alone cannot do.
-async function waitForOptions(sel, timeout = LIST_TIMEOUT_MS) {
+// The project select is replaced/refilled after the client changes. Its
+// placeholder ("Choose a mission / project", value "none") is present even when
+// empty, so a real project option is what we wait for -- not option count, and
+// not visibility, since the element can be display:none while correctly filled.
+async function waitForProjects(row, timeout = LIST_TIMEOUT_MS) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
-    const el = document.querySelector(sel);
-    if (el && el.options.length > 0 && el.offsetParent !== null) return el;
+    const el = document.querySelector(VSA.projectSelectFor(row));
+    if (el && readProjects(el).length > 0) return el;
     await sleep(120);
   }
-  return document.querySelector(sel);
+  return document.querySelector(VSA.projectSelectFor(row));
+}
+
+// Projects are grouped under headers such as "Fixed-price contracts" and
+// "Time-based contracts". `select.options` flattens optgroups, so the headers
+// need no handling; only the "none" placeholder is dropped.
+function readProjects(sel) {
+  if (!sel) return [];
+  return [...sel.options]
+    .filter((o) => o.value && o.value !== 'none' && !o.disabled)
+    .map((o) => ({
+      label: o.text.trim(),
+      code: o.value,
+      group: o.parentElement?.tagName === 'OPTGROUP' ? o.parentElement.label : undefined,
+    }))
+    .filter((p) => p.label);
 }
 
 function fire(el, type) {
@@ -43,18 +58,22 @@ async function chooseActivity(row, label) {
     act.value = opt.value;
     if (typeof act.onchange === 'function') act.onchange();
     else fire(act, 'change');
-    await waitForOptions(VSA.projectSelectFor(row));
+    await waitForProjects(row);
   }
   return act;
 }
 
-async function chooseProject(row, projectLabel) {
-  const sel = await waitForOptions(VSA.projectSelectFor(row));
+// `project` is the stored label; `projectCode` is the option value the catalog
+// recorded. Matching on the code first survives label drift ("... >>> 10/15"
+// counts up as days are booked), with the label kept as a fallback.
+async function chooseProject(row, projectLabel, projectCode) {
+  const sel = await waitForProjects(row);
   if (!sel) throw new Error(`row ${row}: project list did not load`);
-  // Projects read like "BS-26-000112 [Projet Principal]", so match on prefix.
+  const opts = [...sel.options];
   const opt =
-    [...sel.options].find((o) => o.text.trim() === projectLabel.trim()) ||
-    [...sel.options].find((o) => o.text.trim().startsWith(projectLabel.trim()));
+    (projectCode && opts.find((o) => o.value === projectCode)) ||
+    opts.find((o) => o.text.trim() === String(projectLabel).trim()) ||
+    opts.find((o) => o.text.trim().startsWith(String(projectLabel).trim()));
   if (!opt) throw new Error(`unknown project "${projectLabel}"`);
   sel.value = opt.value;
   if (typeof sel.onchange === 'function') sel.onchange();
@@ -86,7 +105,14 @@ function groupByLine(entries) {
   const byKey = new Map();
   for (const e of entries) {
     const key = `${e.client}||${e.project}`;
-    if (!byKey.has(key)) byKey.set(key, { client: e.client, project: e.project, days: [] });
+    if (!byKey.has(key)) {
+      byKey.set(key, {
+        client: e.client,
+        project: e.project,
+        projectCode: e.projectCode,
+        days: [],
+      });
+    }
     byKey.get(key).days.push(e);
   }
   return [...byKey.values()];
@@ -126,7 +152,7 @@ async function injectEntries(entries) {
     try {
       if (!row) row = await addLine();
       await chooseActivity(row, g.client);
-      await chooseProject(row, g.project);
+      await chooseProject(row, g.project, g.projectCode);
       for (const e of g.days) {
         writeDay(row, dayNumber(e.date), e.days);
       }
@@ -147,18 +173,24 @@ async function fetchCatalog(onProgress, onPartial) {
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 
-  // Only "C-" codes are clients with a project list behind them. "I-" codes are
-  // internal activities (Absence, Formation...) which are still trackable but
-  // have no projects, so probing them would just burn one timeout each.
+  // Clients are exactly the options under <optgroup label="Customers">.
+  // Everything else is an internal activity: trackable, but with no projects,
+  // so probing it would only burn a timeout.
+  const inCustomers = new Set(
+    [...act.querySelectorAll('optgroup')]
+      .filter((g) => g.label.trim() === VSA.customersGroupLabel)
+      .flatMap((g) => [...g.querySelectorAll('option')].map((o) => o.value))
+  );
+
   const all = [...act.options]
     .map((o) => ({ label: o.text.trim(), code: o.value }))
     .filter((c) => c.code && c.code !== 'I-INTERNE');
 
   const catalog = all
-    .filter((c) => !c.code.startsWith('C-'))
+    .filter((c) => !inCustomers.has(c.code))
     .map((c) => ({ ...c, internal: true, projects: [] }));
 
-  const clients = all.filter((c) => c.code.startsWith('C-'));
+  const clients = all.filter((c) => inCustomers.has(c.code));
 
   for (let i = 0; i < clients.length; i++) {
     const c = clients[i];
@@ -167,11 +199,8 @@ async function fetchCatalog(onProgress, onPartial) {
       act.value = c.code;
       if (typeof act.onchange === 'function') act.onchange();
       else fire(act, 'change');
-      const sel = await waitForOptions(VSA.projectSelectFor(row));
-      const projects = sel
-        ? [...sel.options].map((o) => ({ label: o.text.trim(), code: o.value })).filter((p) => p.code)
-        : [];
-      catalog.push({ ...c, internal: false, projects });
+      const sel = await waitForProjects(row);
+      catalog.push({ ...c, internal: false, projects: readProjects(sel) });
     } catch (err) {
       catalog.push({ ...c, internal: false, projects: [], error: String(err.message || err) });
     }

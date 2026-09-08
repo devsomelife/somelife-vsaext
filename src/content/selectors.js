@@ -19,7 +19,15 @@
 
 const VSA = {
   activitySelect: 'select.selectTimesheetLine[id^="tiers_"]',
-  projectSelectFor: (row) => `#complete_line_${row}`,
+
+  // The project select carries a random id (e.g. "fa3002b5"), so it must be
+  // found by name, scoped to its line. It is NOT #complete_line_<row>, which
+  // exists but is never populated.
+  projectSelectFor: (row) => `select.select_order[name="line[${row}][order_id]"]`,
+
+  // Clients are the options under <optgroup label="Customers">; the rest of the
+  // dropdown is internal activities, which have no project list.
+  customersGroupLabel: 'Customers',
   descriptionFor: (row) => `#description_${row}`,
   formatFor: (row) => `#input_format_${row}`,
   // These ids contain "((" and "[[", which are invalid CSS selector syntax --
