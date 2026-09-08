@@ -26,6 +26,17 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 - Fill the month grid (`Add row`, or `Fill weekdays` to seed working days).
 - `Inject this month into VSA` writes the entries into the grid.
 
+Injection runs in two passes:
+
+1. **Structure** -- one timesheet line per client/project pair, with both
+   dropdowns selected. This is the slow part: each client change round-trips to
+   VSA for its project list.
+2. **Time** -- writes the day cells. Local and instant.
+
+A line that fails in step 1 gets no days written in step 2, so a failed project
+lookup cannot leave time booked against a half-configured line. The status line
+reports how many lines were prepared and which failed.
+
 Injection never saves. It fills the form the same way clicking would, then you
 review and press Save in VSA yourself.
 

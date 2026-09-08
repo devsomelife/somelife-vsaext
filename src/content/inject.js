@@ -16,14 +16,40 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // placeholder ("Choose a mission / project", value "none") is present even when
 // empty, so a real project option is what we wait for -- not option count, and
 // not visibility, since the element can be display:none while correctly filled.
-async function waitForProjects(row, timeout = LIST_TIMEOUT_MS) {
+// A fingerprint of the option values currently in the select, used to tell a
+// freshly loaded list apart from the previous client's list.
+function projectsFingerprint(row) {
+  const el = document.querySelector(VSA.projectSelectFor(row));
+  return el ? [...el.options].map((o) => o.value).join('|') : '';
+}
+
+// Waits for VSA to actually REPLACE the project list. Waiting only for "some
+// options exist" reads the previous client's list, which is still in the DOM
+// for the first moments after the client changes -- that silently attributes
+// one client's projects to another.
+//
+// `before` is the fingerprint captured immediately before the client changed.
+async function waitForProjects(row, before, timeout = LIST_TIMEOUT_MS) {
   const started = Date.now();
+  let seenChange = false;
+
   while (Date.now() - started < timeout) {
-    const el = document.querySelector(VSA.projectSelectFor(row));
-    if (el && readProjects(el).length > 0) return el;
+    const now = projectsFingerprint(row);
+    if (now !== before) {
+      seenChange = true;
+      const el = document.querySelector(VSA.projectSelectFor(row));
+      // The list is rebuilt in steps, so settle briefly and re-check before
+      // trusting it. A client with genuinely no projects also lands here.
+      await sleep(SETTLE_MS);
+      if (projectsFingerprint(row) === now) return el;
+      continue;
+    }
     await sleep(120);
   }
-  return document.querySelector(VSA.projectSelectFor(row));
+
+  // Timed out. Returning the element unchanged would hand back the previous
+  // client's projects, so signal "nothing loaded" instead.
+  return seenChange ? document.querySelector(VSA.projectSelectFor(row)) : null;
 }
 
 // Projects are grouped under headers such as "Fixed-price contracts" and
@@ -55,10 +81,13 @@ async function chooseActivity(row, label) {
   if (!opt) throw new Error(`unknown client "${label}"`);
 
   if (act.value !== opt.value) {
+    // Captured before the change, so it describes the list being replaced.
+    const before = projectsFingerprint(row);
     act.value = opt.value;
     if (typeof act.onchange === 'function') act.onchange();
     else fire(act, 'change');
-    await waitForProjects(row);
+    const sel = await waitForProjects(row, before);
+    if (!sel) throw new Error(`no projects loaded for "${label}"`);
   }
   return act;
 }
@@ -67,8 +96,11 @@ async function chooseActivity(row, label) {
 // recorded. Matching on the code first survives label drift ("... >>> 10/15"
 // counts up as days are booked), with the label kept as a fallback.
 async function chooseProject(row, projectLabel, projectCode) {
-  const sel = await waitForProjects(row);
-  if (!sel) throw new Error(`row ${row}: project list did not load`);
+  // chooseActivity already waited for the correct list, so read it directly.
+  const sel = document.querySelector(VSA.projectSelectFor(row));
+  if (!sel || readProjects(sel).length === 0) {
+    throw new Error(`row ${row}: project list did not load`);
+  }
   const opts = [...sel.options];
   const opt =
     (projectCode && opts.find((o) => o.value === projectCode)) ||
@@ -142,26 +174,92 @@ async function addLine() {
 
 // Fills the grid without saving. Returns a per-entry report so the options page
 // can show exactly what landed and what did not.
-async function injectEntries(entries) {
-  const report = [];
+// Injection runs in two distinct passes.
+//
+// Phase 1 (structure) creates one timesheet line per client/project pair and
+// selects both dropdowns. This is the slow, asynchronous part: every client
+// change round-trips to VSA to load its project list.
+//
+// Phase 2 (time) writes the day cells. It is purely local and instant.
+//
+// Keeping them apart means a failure while loading a project list cannot leave
+// days written against a half-configured line: phase 2 only ever runs over
+// lines phase 1 confirmed, and days for a failed line are never written.
+async function prepareLines(entries, onProgress) {
   const groups = groupByLine(entries);
+  const prepared = [];
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
+    if (onProgress) {
+      onProgress({ phase: 'structure', index: i + 1, total: groups.length, client: g.client });
+    }
     let row = VSA.allRows()[i];
     try {
       if (!row) row = await addLine();
       await chooseActivity(row, g.client);
       await chooseProject(row, g.project, g.projectCode);
-      for (const e of g.days) {
-        writeDay(row, dayNumber(e.date), e.days);
-      }
-      report.push({ client: g.client, project: g.project, row, ok: true, count: g.days.length });
+      prepared.push({ ...g, row, ok: true });
     } catch (err) {
-      report.push({ client: g.client, project: g.project, row, ok: false, error: String(err.message || err) });
+      prepared.push({ ...g, row, ok: false, error: String(err.message || err) });
+    }
+  }
+  return prepared;
+}
+
+function writeTimes(prepared, onProgress) {
+  const report = [];
+
+  for (let i = 0; i < prepared.length; i++) {
+    const g = prepared[i];
+    if (!g.ok) {
+      // Never write days against a line whose client/project is not set.
+      report.push({
+        client: g.client,
+        project: g.project,
+        row: g.row,
+        ok: false,
+        count: 0,
+        error: g.error,
+      });
+      continue;
+    }
+    if (onProgress) {
+      onProgress({ phase: 'time', index: i + 1, total: prepared.length, client: g.client });
+    }
+    try {
+      for (const e of g.days) {
+        writeDay(g.row, dayNumber(e.date), e.days);
+      }
+      report.push({
+        client: g.client,
+        project: g.project,
+        row: g.row,
+        ok: true,
+        count: g.days.length,
+      });
+    } catch (err) {
+      report.push({
+        client: g.client,
+        project: g.project,
+        row: g.row,
+        ok: false,
+        count: 0,
+        error: String(err.message || err),
+      });
     }
   }
   return report;
+}
+
+async function injectEntries(entries, onProgress) {
+  const prepared = await prepareLines(entries, onProgress);
+  const report = writeTimes(prepared, onProgress);
+  return {
+    report,
+    prepared: prepared.filter((g) => g.ok).length,
+    total: prepared.length,
+  };
 }
 
 // Catalog sync: walk every client in the activity dropdown and collect the
@@ -196,11 +294,17 @@ async function fetchCatalog(onProgress, onPartial) {
     const c = clients[i];
     if (onProgress) onProgress({ index: i + 1, total: clients.length, client: c.label });
     try {
+      const before = projectsFingerprint(row);
       act.value = c.code;
       if (typeof act.onchange === 'function') act.onchange();
       else fire(act, 'change');
-      const sel = await waitForProjects(row);
-      catalog.push({ ...c, internal: false, projects: readProjects(sel) });
+      const sel = await waitForProjects(row, before);
+      catalog.push({
+        ...c,
+        internal: false,
+        projects: readProjects(sel),
+        ...(sel ? {} : { error: 'project list did not load' }),
+      });
     } catch (err) {
       catalog.push({ ...c, internal: false, projects: [], error: String(err.message || err) });
     }
@@ -222,4 +326,11 @@ function sortCatalog(catalog) {
   });
 }
 
-globalThis.VsaInject = { injectEntries, fetchCatalog, writeDay, groupByLine };
+globalThis.VsaInject = {
+  injectEntries,
+  prepareLines,
+  writeTimes,
+  fetchCatalog,
+  writeDay,
+  groupByLine,
+};
