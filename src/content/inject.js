@@ -7,6 +7,7 @@
 // Nothing is submitted; the user still presses Save.
 
 const SETTLE_MS = 400;
+const HOURS_PER_DAY = 7;
 const LIST_TIMEOUT_MS = 15000;
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -64,17 +65,17 @@ async function chooseProject(row, projectLabel) {
 function writeDay(row, dayNumber, days) {
   const format = document.getElementById(`input_format_${row}`);
   const asHours = format && format.value === 'HOUR';
-  const sel = asHours
-    ? VSA.hourInput(row, dayNumber)
-    : VSA.dayInput(row, dayNumber);
-  const input = document.querySelector(sel);
+  const id = asHours
+    ? VSA.hourInputId(row, dayNumber)
+    : VSA.dayInputId(row, dayNumber);
+  const input = document.getElementById(id);
   if (!input) throw new Error(`row ${row}: no cell for day ${dayNumber}`);
 
-  input.value = asHours ? String(Number(days) * 7) : String(days);
+  input.value = asHours ? String(Number(days) * HOURS_PER_DAY) : String(days);
   fire(input, 'input');
   fire(input, 'change');
   input.dispatchEvent(new FocusEvent('blur', { bubbles: true }));
-  return { field: sel, wrote: input.value, unit: asHours ? 'hour' : 'day' };
+  return { field: id, wrote: input.value, unit: asHours ? 'hour' : 'day' };
 }
 
 // Entries are grouped per client+project: one VSA line carries a whole month,
@@ -93,21 +94,35 @@ function dayNumber(dateStr) {
   return Number(dateStr.slice(8, 10));
 }
 
+// VSA starts with a single empty line, so a month spanning several
+// client/project pairs needs extra lines. Clicking "+" is the only supported
+// way to create one; we wait for the new row id to appear.
+async function addLine() {
+  const before = new Set(VSA.allRows());
+  const btn = document.querySelector(VSA.addLineButton);
+  if (!btn) throw new Error('add-line button not found');
+  btn.click();
+
+  const started = Date.now();
+  while (Date.now() - started < LIST_TIMEOUT_MS) {
+    const fresh = VSA.allRows().find((r) => !before.has(r));
+    if (fresh) return fresh;
+    await sleep(150);
+  }
+  throw new Error('new timesheet line did not appear');
+}
+
 // Fills the grid without saving. Returns a per-entry report so the options page
 // can show exactly what landed and what did not.
 async function injectEntries(entries) {
   const report = [];
-  const rows = VSA.allRows();
   const groups = groupByLine(entries);
 
   for (let i = 0; i < groups.length; i++) {
     const g = groups[i];
-    const row = rows[i];
-    if (!row) {
-      report.push({ ...g, ok: false, error: 'no free timesheet line; add one in VSA first' });
-      continue;
-    }
+    let row = VSA.allRows()[i];
     try {
+      if (!row) row = await addLine();
       await chooseActivity(row, g.client);
       await chooseProject(row, g.project);
       for (const e of g.days) {

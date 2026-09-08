@@ -22,10 +22,13 @@ const VSA = {
   projectSelectFor: (row) => `#complete_line_${row}`,
   descriptionFor: (row) => `#description_${row}`,
   formatFor: (row) => `#input_format_${row}`,
-  dayInput: (row, n) => `#input_day_((${row}))_[[${n}]]`,
-  hourInput: (row, n) => `#input_hour_((${row}))_[[${n}]]`,
-  addLineButton: '.vs-ts-add-line, [id*="add_line"]',
-  saveButton: '#save, .vs-ts-save, button[onclick*="save"]',
+  // These ids contain "((" and "[[", which are invalid CSS selector syntax --
+  // they must be looked up with getElementById, never querySelector.
+  dayInputId: (row, n) => `input_day_((${row}))_[[${n}]]`,
+  hourInputId: (row, n) => `input_hour_((${row}))_[[${n}]]`,
+  // The "+" button: <a class="mainaction-add-like-plus"
+  //   onclick="addLine('UITimesheetPivot','<ctx>')">
+  addLineButton: 'a.mainaction-add-like-plus',
 
   rowIdOf(activityEl) {
     return activityEl.id.replace(/^tiers_/, '');

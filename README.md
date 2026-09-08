@@ -51,3 +51,17 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
 - `input#input_day_((<row>))_[[<n>]]` day value, `input#input_hour_...` hours.
 - `input#input_format_<row>` is `HOUR` or `DAY` and decides which of the two
   fields is authoritative for that line.
+
+## Verification status
+
+Verified directly against the live page:
+
+- Select widening: 208px -> 640px and back. Works.
+- Day cell writing: 1 day -> `7`, 0.5 -> `3.5` on a `HOUR`-format line, then
+  restored. Works. Note the ids contain `((` and `[[`, so these fields must be
+  reached with `getElementById`; `querySelector` throws on them.
+- Add line / project list loading: selectors and functions confirmed present
+  (`a.mainaction-add-like-plus` -> `addLine(...)`, `select#tiers_<row>` inline
+  `onchange` -> `getBdc(...)`), but both round-trip to `/service.php` and could
+  not be completed through the remote-debugging channel used during
+  development. They need a first run in the browser as a real content script.
