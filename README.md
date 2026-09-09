@@ -12,8 +12,9 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Sharing
 
-CI attaches a ready-made archive to every run: open the Actions tab, pick a run
-and download the `extension` artifact. To build one locally:
+Released versions are on the Releases page, with the zip attached. CI also
+attaches an archive to every run: open the Actions tab, pick a run and download
+the `extension` artifact. To build one locally:
 
 ```bash
 zip -r vsa-ext.zip manifest.json src icons docs/guide.html

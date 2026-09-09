@@ -38,6 +38,17 @@ CI runs the same checks. They cover syntax and the manifest, not behaviour:
 nothing here can verify the extension against VSA, so test by hand and say what
 you exercised in the pull request.
 
+## Releasing
+
+Actions -> Release -> Run workflow, then enter the version (e.g. `0.2.0`).
+
+It bumps `manifest.json`, runs the same checks as CI, commits and tags
+`v<version>`, then publishes a GitHub release with the zip attached and
+generated notes.
+
+The version must be one to four dot-separated integers, and the tag must not
+already exist; the workflow fails rather than overwriting either.
+
 ## Working against VSA
 
 The extension drives VSA's real form rather than its API, so most breakage comes
