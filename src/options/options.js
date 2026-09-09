@@ -215,6 +215,8 @@ const CONTENT_SCRIPTS = [
 // content script, or none at all -- messaging them fails with "Receiving end
 // does not exist". Rather than make the user reload VSA, inject on demand and
 // retry once.
+// No "tabs" permission is needed: querying by URL is allowed for hosts the user
+// has granted, and sendMessage/executeScript work on that same tab.
 async function sendToVsa(message) {
   const url = await getTimesheetUrl();
   if (!url) throw new Error('Set your VSA timesheet URL first.');
@@ -257,14 +259,17 @@ $('add-row').addEventListener('click', () => {
   render();
 });
 
-async function download(content, filename, type) {
+// A plain anchor is enough on an extension page, so no downloads permission is
+// needed. The object URL is revoked once the click has been handled.
+function download(content, filename, type) {
   const url = URL.createObjectURL(new Blob([content], { type }));
-  await chrome.downloads.download({ url, filename }).catch(() => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-  });
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
 // Quoted only when needed, with embedded quotes doubled, per RFC 4180.
@@ -285,7 +290,7 @@ function toCsv(rows) {
 }
 
 $('export').addEventListener('click', async () => {
-  await download(
+  download(
     JSON.stringify({ entries, catalog }, null, 2),
     'vsa-shadow-tracking.json',
     'application/json'
@@ -298,7 +303,7 @@ $('export-csv').addEventListener('click', async () => {
   const month = currentMonth();
   const shown = entriesForMonth(entries, month);
   if (!shown.length) return say('Nothing to export for this month.', true);
-  await download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
+  download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
   say(`Exported ${shown.length} rows for ${month}.`);
 });
 
