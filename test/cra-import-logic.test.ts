@@ -92,6 +92,35 @@ test('resolveProject: several projects for the client is ambiguous', () => {
   const r = resolveProject({ date: '', client: 'LHOTELLIER', project: 'BS-26-000300 [Enduit]', days: 1, task: '' }, ref);
   assert.equal(r.libelle, '');
   assert.match(r.error, /2 projets/);
+  assert.match(r.error, /aucun ne porte le numéro BS-26-000300/);
+  const noCode = resolveProject({ date: '', client: 'LHOTELLIER', project: 'Enduit', days: 1, task: '' }, ref);
+  assert.match(noCode.error, /n'a pas de numéro BS ; précisez/);
+  assert.ok(!/le sans/.test(noCode.error));
+});
+
+test('resolveProject: an inactive project is unknown even when its number matches', () => {
+  const r = resolveProject({ date: '', client: 'Telediag', project: 'BS-25-000001 [Ancien]', days: 1, task: '' }, ref);
+  assert.equal(r.libelle, '');
+  assert.match(r.error, /Projet inconnu/);
+});
+
+test('planImport uses the workbook hours per day and requires a client', () => {
+  const p = parsePayload(valid({ rows: [
+    { date: '2026-09-01', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 0.5, task: '' },
+    { date: '2026-09-01', client: '', project: 'BS-26-000086 [x]', days: 1, task: '' },
+  ] })).payload as CraPayload;
+  const seven = planImport(p, ref, 7);
+  assert.ok(seven.problems.some((m) => /0\.5 jour\(s\) = 3\.5 h, .*\(7 h\/jour\)/.test(m)));
+  assert.ok(seven.problems.some((m) => /client manquant/.test(m)));
+  assert.deepEqual(planImport(p, ref, 8).problems, ['2026-09-01 : client manquant']);
+});
+
+test('planImport keeps two identical entries as two rows', () => {
+  const row = { date: '2026-09-01', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 0.5, task: 'x' };
+  const p = parsePayload(valid({ rows: [row, { ...row }] })).payload as CraPayload;
+  const plan = planImport(p, ref, 8);
+  assert.deepEqual(plan.problems, []);
+  assert.equal(plan.rows.length, 2);
 });
 
 test('excelSerial and monthOfSerial', () => {
@@ -142,6 +171,8 @@ test('planPlacement reuses marked rows of the month and blank rows, clears lefto
     [46267, 'Sergic', 'manual', 4, '', '', '', '', ''], // manual, kept
     ['', '', '', '', '', '', '', '', ''], // blank
     [46268, 'Sergic', '', 8, '', '', '', '', SOURCE_MARK], // marked, this month
+    ['', '', 'à faire : relire', '', '', '', '', '', ''], // only a task typed: not blank, kept
+    ['', '', '', '', '', '', '', 'note perso', ''], // only a comment typed: not blank, kept
   ];
   const p = planPlacement(body, col, '2026-09', 2);
   assert.deepEqual(p.reuse, [1, 3]);

@@ -186,18 +186,18 @@ function resolveProject(row: CraRow, ref: RefProject[]): { libelle: string; erro
     if (byCode.length === 1) return { libelle: byCode[0].libelle, error: "" };
     if (byCode.length > 1) return { libelle: "", error: `Numéro ${code} présent ${byCode.length} fois dans le référentiel Admin` };
   }
-  const where = code ? `numéro ${code}` : "sans numéro BS";
   const client = normalizeKey(row.client);
   const byClient = client ? ref.filter((p) => normalizeKey(p.client) === client) : [];
   const compatible = byClient.filter((p) => !(code && BS_CODE_RE.test(p.numero) && p.numero !== code));
   if (compatible.length === 1) return { libelle: compatible[0].libelle, error: "" };
   if (compatible.length > 1) {
-    return {
-      libelle: "",
-      error: `Client « ${row.client} » : ${compatible.length} projets dans le référentiel, aucun ne porte le ${where} ; ajoutez le numéro dans Admin`,
-    };
+    const why = code
+      ? `aucun ne porte le numéro ${code} ; ajoutez le numéro dans Admin`
+      : `et le libellé VSA « ${row.project} » n'a pas de numéro BS ; précisez le numéro dans Admin`;
+    return { libelle: "", error: `Client « ${row.client} » : ${compatible.length} projets dans le référentiel, ${why}` };
   }
-  return { libelle: "", error: `Projet inconnu « ${row.project} » : ajoutez-le dans Admin (Client « ${row.client} », ${where})` };
+  const ident = code ? `numéro ${code}` : "sans numéro BS";
+  return { libelle: "", error: `Projet inconnu « ${row.project} » : ajoutez-le dans Admin (Client « ${row.client} », ${ident})` };
 }
 
 // ---- Dates ------------------------------------------------------------------
@@ -235,6 +235,7 @@ function planImport(payload: CraPayload, ref: RefProject[], hoursPerDay: number)
       problems.push(`${where} ${r.project} : ${r.days} jour(s) = ${hours} h, il faut un nombre entier d'heures (${hoursPerDay} h/jour)`);
     }
     let libelle = "";
+    if (!r.client) problems.push(`${where} : client manquant`);
     if (!r.project) {
       problems.push(`${where} : projet manquant`);
     } else {
@@ -242,7 +243,7 @@ function planImport(payload: CraPayload, ref: RefProject[], hoursPerDay: number)
       if (res.error) problems.push(res.error);
       libelle = res.libelle;
     }
-    if (!isNaN(serial) && hoursOk && libelle) rows.push({ serial, libelle, task: r.task, hours: Math.round(hours) });
+    if (!isNaN(serial) && hoursOk && libelle && r.client) rows.push({ serial, libelle, task: r.task, hours: Math.round(hours) });
   });
   rows.sort((a, b) => a.serial - b.serial || (a.libelle < b.libelle ? -1 : a.libelle > b.libelle ? 1 : 0));
   return { rows, problems: unique(problems) };
@@ -270,13 +271,15 @@ function isEntrySheet(headers: string[]): boolean {
 
 // Slots are the rows this import owns (marked, same month) plus blank rows, in
 // sheet order. Owned rows left over are cleared, blank ones stay blank; what
-// does not fit is appended.
+// does not fit is appended. A row is blank only when every typed column is:
+// a hand-written task or comment without a date is still someone's row.
 function planPlacement(body: CellValue[][], col: EntryColumns, month: string, needed: number): Placement {
   const marked: number[] = [];
   const empty: number[] = [];
+  const typed = [col.date, col.projet, col.tache, col.heures, col.commentaire].filter((c) => c >= 0);
   body.forEach((r, i) => {
     const d = r[col.date];
-    if (isBlank(d) && isBlank(r[col.projet]) && isBlank(r[col.heures])) {
+    if (typed.every((c) => isBlank(r[c]))) {
       empty.push(i);
       return;
     }
