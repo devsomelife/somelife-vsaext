@@ -23,12 +23,7 @@ jobs:
       # No build step and no dependencies: the extension ships the sources
       # Chrome loads. These checks guard the things that actually break it.
       - name: Syntax check every JavaScript file
-        run: |
-          status=0
-          while IFS= read -r f; do
-            node --check "$f" || { echo "::error file=$f::syntax error"; status=1; }
-          done < <(find src tools -name '*.js')
-          exit $status
+        run: ./.github/scripts/check-syntax.sh
 
       - name: Validate manifest and referenced files
         run: node .github/scripts/validate-manifest.mjs
@@ -36,7 +31,7 @@ jobs:
       - name: Check shell scripts
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck tools/*.sh
+          shellcheck tools/*.sh .github/scripts/*.sh
 
       - name: Verify the package builds and is loadable
         run: |
