@@ -22,21 +22,30 @@ dependencies: the files in `src/` are what Chrome loads.
 | `src/content/main.js` | Content script entry and message handling. |
 | `src/options/` | The tracking page. |
 | `src/shared/store.js` | Entry model and `chrome.storage` access. |
-| `src/shared/config.js` | The user's timesheet URL and its match patterns. |
+| `src/shared/config.js` | The user's timesheet URL and its match patterns, plus the CRA workbook preferences. |
+| `src/shared/cra.js` | The one-line block copied for the team CRA workbook (contract v1). |
 | `src/background.js` | Registers the content script for the configured URL. |
 | `tools/dump-catalog.js` | Console fallback for reading the client catalog. |
+| `tools/cra-import/` | The two Office Scripts for the CRA workbook: `logic.ts` (pure, tested), the Excel glue, `build.mjs` and the generated `dist/`. |
+| `test/` | `node --test` suites for `cra.js`, `config.js` and `logic.ts`. |
 | `.github/scripts/` | The checks CI runs. |
 
 ## Before opening a pull request
 
+Node 24 or newer (the `.ts` tests rely on Node's built-in type stripping).
+
 ```bash
 node .github/scripts/check-syntax.mjs
 node .github/scripts/validate-manifest.mjs
+node --test
+node tools/cra-import/build.mjs && git diff --exit-code -- tools/cra-import/dist
 ```
 
-CI runs the same checks. They cover syntax and the manifest, not behaviour:
-nothing here can verify the extension against VSA, so test by hand and say what
-you exercised in the pull request.
+CI runs the same checks. They cover syntax, the manifest, the pure logic and
+the generated bundles, not behaviour: nothing here can verify the extension
+against VSA or the scripts against Excel, so test by hand and say what you
+exercised in the pull request. Edit `tools/cra-import/logic.ts` or the glue,
+never `dist/`, then rebuild.
 
 ## Releasing
 
