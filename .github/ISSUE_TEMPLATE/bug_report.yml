@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in the extension does not work as expected.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste screenshots or HTML containing client names, project codes
+        or anything else confidential. Redact them first.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+      placeholder: |
+        1. Opened the VSA timesheet page
+        2. Clicked "Sync clients & projects from VSA"
+        3. Expected the client list to fill; it stayed empty
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part
+      options:
+        - Sync (loading clients and projects)
+        - Injection (pushing days into VSA)
+        - Tracking page (rows, totals, import/export)
+        - Dropdown widening on the VSA page
+        - Installation
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: status-line
+    attributes:
+      label: Status line message
+      description: The exact text shown at the bottom of the tracking page, if any.
+      render: text
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console errors
+      description: >
+        Errors from DevTools (F12) on the VSA page, and from the extension's own
+        console via chrome://extensions -> Errors.
+      render: text
+
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome version
+      placeholder: "chrome://version"
+    validations:
+      required: true

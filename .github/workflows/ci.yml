@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # No build step and no dependencies: the extension ships the sources
+      # Chrome loads. These checks guard the things that actually break it.
+      - name: Syntax check every JavaScript file
+        run: |
+          status=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "::error file=$f::syntax error"; status=1; }
+          done < <(find src tools -name '*.js')
+          exit $status
+
+      - name: Validate manifest and referenced files
+        run: node .github/scripts/validate-manifest.mjs
+
+      - name: Check shell scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck tools/*.sh
+
+      - name: Verify the package builds and is loadable
+        run: |
+          ./tools/package.sh
+          node .github/scripts/validate-manifest.mjs --zip vsa-ext-*.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: vsa-ext-*.zip
+          if-no-files-found: error

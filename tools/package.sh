@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Builds a shareable zip of the extension.
 #
-# Only runtime files go in: no git metadata, no README, no tools. The result
-# loads directly via chrome://extensions -> Load unpacked (after unzipping).
+# Only what the extension needs at runtime, plus the user guide: no git
+# metadata, no tools, no CI config. The result loads directly via
+# chrome://extensions -> Load unpacked (after unzipping).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
