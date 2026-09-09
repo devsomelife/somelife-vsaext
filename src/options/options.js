@@ -1,4 +1,6 @@
 import {
+  getLanguage,
+  setLanguage,
   getTimesheetUrl,
   setTimesheetUrl,
   normalizeUrl,
@@ -446,6 +448,7 @@ function setUrlStatus(msg, isError) {
 async function refreshSetup() {
   const url = await getTimesheetUrl();
   $('timesheet-url').value = url;
+  $('language').value = await getLanguage();
   $('setup').classList.toggle('unset', !url);
 
   if (!url) {
@@ -468,6 +471,13 @@ function updateButtons() {
   $('sync').disabled = !configured;
   $('inject').disabled = !configured || catalog.length === 0;
 }
+
+// Stored immediately; the content script picks the change up via
+// chrome.storage.onChanged, so no reload is needed.
+$('language').addEventListener('change', async () => {
+  await setLanguage($('language').value);
+  setUrlStatus('Language preference saved.', false);
+});
 
 $('month').addEventListener('change', render);
 $('prev-month').addEventListener('click', () => shiftMonth(-1));

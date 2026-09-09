@@ -8,6 +8,16 @@ if (!globalThis.__vsaExtLoaded) {
 
 VsaWiden.installWiden();
 
+// The language preference decides which optgroup label identifies clients when
+// the option codes are not conclusive.
+chrome.storage.local.get('language').then((bag) => {
+  if (bag.language) VSA.language = bag.language;
+});
+
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.language) VSA.language = changes.language.newValue || 'auto';
+});
+
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === 'ping') {
     sendResponse({ ok: true, rows: VSA.allRows().length });

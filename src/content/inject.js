@@ -273,14 +273,11 @@ async function fetchCatalog(onProgress, onPartial) {
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 
-  // Only the options under <optgroup label="Customers"> are synced. The other
-  // options are internal activities (Absence, Formation...) and are left out
-  // of the catalog entirely.
-  const clients = [...act.querySelectorAll('optgroup')]
-    .filter((g) => g.label.trim() === VSA.customersGroupLabel)
-    .flatMap((g) => [...g.querySelectorAll('option')])
-    .map((o) => ({ label: o.text.trim(), code: o.value }))
-    .filter((c) => c.code);
+  // Only clients are synced. Internal activities (Absence, Formation...) have
+  // no project list and are left out of the catalog entirely.
+  const clients = [...act.options]
+    .filter((o) => o.value && VSA.isClientOption(o))
+    .map((o) => ({ label: o.text.trim(), code: o.value }));
 
   const catalog = [];
 

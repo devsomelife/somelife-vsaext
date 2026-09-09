@@ -123,8 +123,11 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
   also exists but is never populated -- it is not the project select.
   Projects sit under optgroup headers ("Fixed-price contracts", "Time-based
   contracts") and the list starts with a `none` placeholder.
-- Clients are the options under `<optgroup label="Customers">`. Only these are
-  synced; internal activities (Absence, Formation, Intercontrat...) are ignored.
+- Clients carry a `C-` code, internal activities an `I-` code. Only clients are
+  synced. The codes are identical in every locale; the optgroup label is not
+  (`Customers` in English, `Clients` in French), so the code is what identifies
+  a client, with the labels kept only as a fallback. The options page has a
+  language preference (auto, French, English) driving that fallback.
 - `input#input_day_((<row>))_[[<n>]]` day value, `input#input_hour_...` hours.
 - `input#input_format_<row>` is `HOUR` or `DAY` and decides which of the two
   fields is authoritative for that line.

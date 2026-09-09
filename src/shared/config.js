@@ -6,6 +6,21 @@
 // script is registered against it at runtime.
 
 const KEY = 'timesheetUrl';
+const LANG_KEY = 'language';
+
+// "auto" reads the language from the VSA page itself, which is right unless the
+// page reports something unexpected.
+export const LANGUAGES = ['auto', 'fr', 'en'];
+
+export async function getLanguage() {
+  const bag = await chrome.storage.local.get(LANG_KEY);
+  return LANGUAGES.includes(bag[LANG_KEY]) ? bag[LANG_KEY] : 'auto';
+}
+
+export async function setLanguage(lang) {
+  if (!LANGUAGES.includes(lang)) throw new Error(`unknown language "${lang}"`);
+  await chrome.storage.local.set({ [LANG_KEY]: lang });
+}
 
 export async function getTimesheetUrl() {
   const bag = await chrome.storage.local.get(KEY);

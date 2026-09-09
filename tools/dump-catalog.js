@@ -25,12 +25,17 @@
     document.querySelector(`select.select_order[name="line[${row}][order_id]"]`);
   const original = act.value;
 
-  // Only customers are collected; internal activities are ignored.
-  const clients = [...act.querySelectorAll('optgroup')]
-    .filter((g) => g.label.trim() === 'Customers')
-    .flatMap((g) => [...g.querySelectorAll('option')])
-    .map((o) => ({ label: o.text.trim(), code: o.value }))
-    .filter((c) => c.code);
+  // Only clients are collected; internal activities are ignored. Clients carry
+  // a "C-" code in every locale, unlike the optgroup label ("Customers" in
+  // English, "Clients" in French).
+  const isClient = (o) =>
+    o.value.startsWith('C-') ||
+    (o.parentElement?.tagName === 'OPTGROUP' &&
+      ['Customers', 'Clients'].includes(o.parentElement.label.trim()));
+
+  const clients = [...act.options]
+    .filter((o) => o.value && isClient(o))
+    .map((o) => ({ label: o.text.trim(), code: o.value }));
 
   console.log(`Reading ${clients.length} clients...`);
   const out = [];
