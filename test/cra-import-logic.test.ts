@@ -8,13 +8,13 @@ import {
 
 const REF_HEADERS = ['Client', 'Numéro', 'Projet', 'Type', 'Actif', 'Libellé'];
 const REF_BODY: CellValue[][] = [
-  ['DE RIJKE France', 'BS-26-000086', 'Gestion interfaces', 'Facturable', 'Oui', 'DE RIJKE France - BS-26-000086 - Gestion interfaces'],
-  ['Sergic', '', '', 'Facturable', 'Oui', 'Sergic'],
-  ['Lhotellier', 15403, 'Portail Enduit', 'Facturable', 'Oui', 'Lhotellier - 15403 - Portail Enduit'],
-  ['Lhotellier', '', 'Enrobé', 'Facturable', 'Oui', 'Lhotellier - Enrobé'],
-  ['Telediag', 'BS-25-000001', 'Ancien', 'Facturable', 'Non', 'Telediag - BS-25-000001 - Ancien'],
-  ['Blue Soft', '', 'Interco', 'Interne', 'oui', 'Blue Soft - Interco'],
-  ['Vinci', 'BS-26-000200', 'Lot 1', 'Facturable', 'Oui', 'Vinci - BS-26-000200 - Lot 1'],
+  ['Northwind Trading', 'BS-99-000086', 'Portail fournisseurs', 'Facturable', 'Oui', 'Northwind Trading - BS-99-000086 - Portail fournisseurs'],
+  ['Atlas Logistique', '', '', 'Facturable', 'Oui', 'Atlas Logistique'],
+  ['Meridian Santé', 40001, 'Portail Nord', 'Facturable', 'Oui', 'Meridian Santé - 40001 - Portail Nord'],
+  ['Meridian Santé', '', 'Sud', 'Facturable', 'Oui', 'Meridian Santé - Sud'],
+  ['Boreal Energie', 'BS-99-000101', 'Ancien', 'Facturable', 'Non', 'Boreal Energie - BS-99-000101 - Ancien'],
+  ['Agence', '', 'Interco', 'Interne', 'oui', 'Agence - Interco'],
+  ['Cap Horizon', 'BS-99-000200', 'Lot 1', 'Facturable', 'Oui', 'Cap Horizon - BS-99-000200 - Lot 1'],
 ];
 const ref = readReferential(REF_HEADERS, REF_BODY).projects;
 
@@ -25,16 +25,16 @@ const valid = (over: Partial<CraPayload> = {}): string =>
     month: '2026-09',
     person: '',
     rows: [
-      { date: '2026-09-03', client: 'DE RIJKE FRANCE', project: 'BS-26-000086 [Projet Principal]', days: 0.5, task: 'atelier' },
-      { date: '2026-09-01', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 1, task: '' },
+      { date: '2026-09-03', client: 'NORTHWIND TRADING', project: 'BS-99-000086 [Projet Principal]', days: 0.5, task: 'atelier' },
+      { date: '2026-09-01', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 1, task: '' },
     ],
     ...over,
   });
 
 test('parsePayload accepts the contract and trims strings', () => {
-  const { payload, error } = parsePayload(valid({ person: ' Fabien DUCOUDRAY ' }));
+  const { payload, error } = parsePayload(valid({ person: ' Camille DUPONT ' }));
   assert.equal(error, '');
-  assert.equal(payload?.person, 'Fabien DUCOUDRAY');
+  assert.equal(payload?.person, 'Camille DUPONT');
   assert.equal(payload?.rows.length, 2);
   assert.equal(payload?.rows[0].days, 0.5);
 });
@@ -48,66 +48,66 @@ test('parsePayload refuses garbage, wrong source, wrong version, empty rows, bad
 });
 
 test('normalizeKey ignores case, accents and spacing', () => {
-  assert.equal(normalizeKey('  DE RIJKE   Fránce '), 'de rijke france');
+  assert.equal(normalizeKey('  NORTHWIND   Tráding '), 'northwind trading');
   assert.equal(normalizeKey('Libellé'), 'libelle');
 });
 
 test('extractCode finds the BS number whatever the case', () => {
-  assert.equal(extractCode('bs-26-000086 [Projet Principal]'), 'BS-26-000086');
-  assert.equal(extractCode('Telediag'), '');
+  assert.equal(extractCode('bs-99-000086 [Projet Principal]'), 'BS-99-000086');
+  assert.equal(extractCode('Boreal Energie'), '');
 });
 
 test('readReferential keeps active rows, reads Numéro as text, locates columns by header', () => {
   assert.equal(ref.length, 6);
-  assert.equal(ref[2].numero, '15403');
-  assert.ok(ref.every((p) => p.libelle !== 'Telediag - BS-25-000001 - Ancien'));
+  assert.equal(ref[2].numero, '40001');
+  assert.ok(ref.every((p) => p.libelle !== 'Boreal Energie - BS-99-000101 - Ancien'));
   assert.match(readReferential(['Client', 'Projet'], []).error, /Numéro|Actif|Libellé/);
 });
 
 test('resolveProject: by number first', () => {
-  const r = resolveProject({ date: '', client: 'DE RIJKE FRANCE', project: 'BS-26-000086 [x]', days: 1, task: '' }, ref);
-  assert.equal(r.libelle, 'DE RIJKE France - BS-26-000086 - Gestion interfaces');
+  const r = resolveProject({ date: '', client: 'NORTHWIND TRADING', project: 'BS-99-000086 [x]', days: 1, task: '' }, ref);
+  assert.equal(r.libelle, 'Northwind Trading - BS-99-000086 - Portail fournisseurs');
 });
 
 test('resolveProject: duplicate number is reported', () => {
-  const dup = ref.concat([{ client: 'Autre', numero: 'BS-26-000086', projet: 'Bis', libelle: 'Autre - BS-26-000086 - Bis' }]);
-  const r = resolveProject({ date: '', client: 'DE RIJKE FRANCE', project: 'BS-26-000086 [x]', days: 1, task: '' }, dup);
+  const dup = ref.concat([{ client: 'Autre', numero: 'BS-99-000086', projet: 'Bis', libelle: 'Autre - BS-99-000086 - Bis' }]);
+  const r = resolveProject({ date: '', client: 'NORTHWIND TRADING', project: 'BS-99-000086 [x]', days: 1, task: '' }, dup);
   assert.equal(r.libelle, '');
-  assert.match(r.error, /BS-26-000086 présent 2 fois/);
+  assert.match(r.error, /BS-99-000086 présent 2 fois/);
 });
 
 test('resolveProject: falls back to the client when it has exactly one compatible project', () => {
-  const r = resolveProject({ date: '', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 1, task: '' }, ref);
-  assert.equal(r.libelle, 'Sergic');
+  const r = resolveProject({ date: '', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 1, task: '' }, ref);
+  assert.equal(r.libelle, 'Atlas Logistique');
 });
 
 test('resolveProject: a client whose only project carries another BS number is unknown', () => {
-  const r = resolveProject({ date: '', client: 'Vinci', project: 'BS-26-000201 [Lot 2]', days: 1, task: '' }, ref);
+  const r = resolveProject({ date: '', client: 'Cap Horizon', project: 'BS-99-000201 [Lot 2]', days: 1, task: '' }, ref);
   assert.equal(r.libelle, '');
   assert.match(r.error, /Projet inconnu/);
-  assert.match(r.error, /BS-26-000201/);
+  assert.match(r.error, /BS-99-000201/);
 });
 
 test('resolveProject: several projects for the client is ambiguous', () => {
-  const r = resolveProject({ date: '', client: 'LHOTELLIER', project: 'BS-26-000300 [Enduit]', days: 1, task: '' }, ref);
+  const r = resolveProject({ date: '', client: 'MERIDIAN SANTE', project: 'BS-99-000300 [Nord]', days: 1, task: '' }, ref);
   assert.equal(r.libelle, '');
   assert.match(r.error, /2 projets/);
-  assert.match(r.error, /aucun ne porte le numéro BS-26-000300/);
-  const noCode = resolveProject({ date: '', client: 'LHOTELLIER', project: 'Enduit', days: 1, task: '' }, ref);
+  assert.match(r.error, /aucun ne porte le numéro BS-99-000300/);
+  const noCode = resolveProject({ date: '', client: 'MERIDIAN SANTE', project: 'Nord', days: 1, task: '' }, ref);
   assert.match(noCode.error, /n'a pas de numéro BS ; précisez/);
   assert.ok(!/le sans/.test(noCode.error));
 });
 
 test('resolveProject: an inactive project is unknown even when its number matches', () => {
-  const r = resolveProject({ date: '', client: 'Telediag', project: 'BS-25-000001 [Ancien]', days: 1, task: '' }, ref);
+  const r = resolveProject({ date: '', client: 'Boreal Energie', project: 'BS-99-000101 [Ancien]', days: 1, task: '' }, ref);
   assert.equal(r.libelle, '');
   assert.match(r.error, /Projet inconnu/);
 });
 
 test('planImport uses the workbook hours per day and requires a client', () => {
   const p = parsePayload(valid({ rows: [
-    { date: '2026-09-01', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 0.5, task: '' },
-    { date: '2026-09-01', client: '', project: 'BS-26-000086 [x]', days: 1, task: '' },
+    { date: '2026-09-01', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 0.5, task: '' },
+    { date: '2026-09-01', client: '', project: 'BS-99-000086 [x]', days: 1, task: '' },
   ] })).payload as CraPayload;
   const seven = planImport(p, ref, 7);
   assert.ok(seven.problems.some((m) => /0\.5 jour\(s\) = 3\.5 h, .*\(7 h\/jour\)/.test(m)));
@@ -116,7 +116,7 @@ test('planImport uses the workbook hours per day and requires a client', () => {
 });
 
 test('planImport keeps two identical entries as two rows', () => {
-  const row = { date: '2026-09-01', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 0.5, task: 'x' };
+  const row = { date: '2026-09-01', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 0.5, task: 'x' };
   const p = parsePayload(valid({ rows: [row, { ...row }] })).payload as CraPayload;
   const plan = planImport(p, ref, 8);
   assert.deepEqual(plan.problems, []);
@@ -136,15 +136,15 @@ test('planImport converts to whole hours, sorts, and lists every problem once', 
   const plan = planImport(ok, ref, 8);
   assert.deepEqual(plan.problems, []);
   assert.deepEqual(plan.rows.map((r) => [r.serial, r.libelle, r.hours, r.task]), [
-    [46266, 'Sergic', 8, ''],
-    [46268, 'DE RIJKE France - BS-26-000086 - Gestion interfaces', 4, 'atelier'],
+    [46266, 'Atlas Logistique', 8, ''],
+    [46268, 'Northwind Trading - BS-99-000086 - Portail fournisseurs', 4, 'atelier'],
   ]);
   const bad = parsePayload(valid({ rows: [
-    { date: '2026-08-31', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 1, task: '' },
-    { date: '2026-09-02', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 0.3, task: '' },
+    { date: '2026-08-31', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 1, task: '' },
+    { date: '2026-09-02', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 0.3, task: '' },
     { date: '2026-09-02', client: 'Nobody', project: 'BS-99-000001 [x]', days: 1, task: '' },
     { date: '2026-09-03', client: 'Nobody', project: 'BS-99-000001 [x]', days: 1, task: '' },
-    { date: 'bad', client: 'SERGIC', project: 'BS-25-000012 [TMA]', days: 1, task: '' },
+    { date: 'bad', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 1, task: '' },
   ] })).payload as CraPayload;
   const refused = planImport(bad, ref, 8);
   assert.equal(refused.problems.filter((p) => /Projet inconnu/.test(p)).length, 1);
@@ -166,11 +166,11 @@ test('planPlacement reuses marked rows of the month and blank rows, clears lefto
   const h = ['Date', 'Projet', 'Tâche', 'Heures', 'Jours', 'Mois', 'Semaine', 'Commentaire', 'Source'];
   const col = columnIndexes(h);
   const body: CellValue[][] = [
-    [46235, 'Sergic', '', 8, '', '', '', '', SOURCE_MARK], // 2026-08-01: other month, kept
-    [46266, 'Sergic', '', 8, '', '', '', '', SOURCE_MARK], // marked, this month
-    [46267, 'Sergic', 'manual', 4, '', '', '', '', ''], // manual, kept
+    [46235, 'Atlas Logistique', '', 8, '', '', '', '', SOURCE_MARK], // 2026-08-01: other month, kept
+    [46266, 'Atlas Logistique', '', 8, '', '', '', '', SOURCE_MARK], // marked, this month
+    [46267, 'Atlas Logistique', 'manual', 4, '', '', '', '', ''], // manual, kept
     ['', '', '', '', '', '', '', '', ''], // blank
-    [46268, 'Sergic', '', 8, '', '', '', '', SOURCE_MARK], // marked, this month
+    [46268, 'Atlas Logistique', '', 8, '', '', '', '', SOURCE_MARK], // marked, this month
     ['', '', 'à faire : relire', '', '', '', '', '', ''], // only a task typed: not blank, kept
     ['', '', '', '', '', '', '', 'note perso', ''], // only a comment typed: not blank, kept
   ];

@@ -88,7 +88,7 @@ export function parsePayload(text: string): { payload: CraPayload | null; error:
 
 // ---- Referential ------------------------------------------------------------
 
-// Lowercase, no accents, single spaces: "DE RIJKE  Fránce" and "de rijke france" match.
+// Lowercase, no accents, single spaces: "NORTHWIND  Tráding" and "northwind trading" match.
 export function normalizeKey(s: string): string {
   return s.normalize("NFD").replace(DIACRITICS_RE, "").toLowerCase().replace(/\s+/g, " ").trim();
 }
@@ -100,6 +100,9 @@ export function extractCode(label: string): string {
 
 // Active rows of T_Projets. Columns are located by header so the table may gain
 // columns; Libellé is read as calculated by the workbook, never recomposed.
+// The headers are French on purpose: they belong to the team's workbook, which
+// is French whatever language each user's VSA runs in. Only the VSA side of the
+// contract is locale-independent.
 export function readReferential(headers: string[], body: CellValue[][]): { projects: RefProject[]; error: string } {
   const idx = (name: string): number => headers.findIndex((h) => normalizeKey(h) === normalizeKey(name));
   const iClient = idx("Client");

@@ -1,6 +1,6 @@
 # CRA d'équipe — importer les journées de VSA Ext (à installer une seule fois)
 
-Deux scripts Office pour le classeur `CRA-Equipe.xlsx`. Ils complètent les six boutons déjà en place (voir le `README-boutons.md` de Nicolas) et suivent la même mécanique : scripts dans OneDrive, associés au classeur, boutons posés à la main.
+Deux scripts Office pour le classeur `CRA-Equipe.xlsx`. Ils complètent les six boutons déjà en place (voir le `README-boutons.md` livré avec le classeur) et suivent la même mécanique : scripts dans OneDrive, associés au classeur, boutons posés à la main.
 
 ## Le principe
 
@@ -32,12 +32,12 @@ Les heures sont recalculées côté classeur avec `HeuresParJour` (onglet Admin)
 1. Copiez les deux fichiers `.osts` de `dist/` dans votre OneDrive : `Documents\Scripts Office\`. Le nom du fichier est le nom du script.
 2. Ouvrez `CRA-Equipe.xlsx` dans **Excel pour le web**.
 3. Ruban **Automatiser** → **Afficher les scripts** → lien **Afficher plus de scripts** → **Mes fichiers** → `Documents` → `Scripts Office` → ouvrez `CRA - Initialiser import VSA Ext`.
-4. Cliquez **Exécuter**. Le volet affiche un rapport par onglet (`Fabien DUCOUDRAY : colonne Source ajoutée`…). Vérifiez sur un onglet : une colonne **Source** en I27 et la cellule jaune **I23** « ← Coller ici le bloc VSA Ext ». Affichez `_Modele` (clic droit sur un onglet → Afficher) pour vérifier qu'il l'a aussi, puis remasquez-le.
+4. Cliquez **Exécuter**. Le volet affiche un rapport par onglet (`Camille DUPONT : colonne Source ajoutée`…). Vérifiez sur un onglet : une colonne **Source** en I27 et la cellule jaune **I23** « ← Coller ici le bloc VSA Ext ». Affichez `_Modele` (clic droit sur un onglet → Afficher) pour vérifier qu'il l'a aussi, puis remasquez-le.
 5. Ouvrez de la même façon `CRA - Importer VSA Ext`. Dans sa fiche, activez **Associer au classeur** : c'est ce qui permet aux collègues de l'exécuter et débloque le bouton.
 6. Sur **chaque onglet personne** : cliquez la cellule **I22**, puis **Ajouter un bouton à la feuille de calcul**. **F5** : le bouton apparaît, libellé « Exécuter CRA - Importer VSA Ext ».
 7. Clic droit sur le bouton → **Modifier le texte** → `⬇ Importer VSA Ext`. Retaillez-le à la largeur des boutons voisins (I → M), comme « ⟳ Cette semaine » juste au-dessus.
 8. Faites de même sur `_Modele` (afficher, poser, remasquer) : toute personne créée ensuite par « ➕ Ajouter la personne » hérite du bouton, de la colonne et des cellules.
-9. Rappel du README de Nicolas : après un remplacement du fichier, le premier clic sur un bouton affiche « Initialisation des boutons d'exécution » et ne fait rien ; le deuxième fonctionne.
+9. Rappel du `README-boutons.md` du classeur : après un remplacement du fichier, le premier clic sur un bouton affiche « Initialisation des boutons d'exécution » et ne fait rien ; le deuxième fonctionne.
 10. Testez (section suivante).
 
 Si l'onglet **Automatiser** est absent du ruban, les Office Scripts sont désactivés pour le tenant : passez par l'IT.
@@ -56,7 +56,7 @@ Sur une **copie** du classeur d'abord, jamais sur le fichier de l'équipe.
 
 ## Risque connu
 
-Le script « CRA - Ajouter une ligne pour aujourdhui » de Nicolas peut supposer un tableau à 8 colonnes. Après l'initialisation il y en a 9. Si le bouton **➕ Ligne du jour** échoue, ouvrez ce script et remplacez toute liste de 8 valeurs par une liste de 9 (ou faites-lui écrire les cellules par en-tête). Les autres boutons ne touchent pas au tableau.
+Le script « CRA - Ajouter une ligne pour aujourdhui » livré avec le classeur peut supposer un tableau à 8 colonnes. Après l'initialisation il y en a 9. Si le bouton **➕ Ligne du jour** échoue, ouvrez ce script et remplacez toute liste de 8 valeurs par une liste de 9 (ou faites-lui écrire les cellules par en-tête). Les autres boutons ne touchent pas au tableau.
 
 ## Remplacer ou déplacer le classeur
 
@@ -69,8 +69,8 @@ Un `.osts` est un JSON : `{"version":"0.3.0","body":"<le code>","description":"�
 ## Contrat d'échange (version 1)
 
 ```json
-{"v":1,"source":"vsa-ext","month":"2026-09","person":"Fabien DUCOUDRAY",
- "rows":[{"date":"2026-09-01","client":"DE RIJKE FRANCE","project":"BS-26-000086 [Projet Principal]","days":1,"task":"Atelier interfaces"}]}
+{"v":1,"source":"vsa-ext","month":"2026-09","person":"Camille DUPONT",
+ "rows":[{"date":"2026-09-01","client":"NORTHWIND TRADING","project":"BS-99-000086 [Projet Principal]","days":1,"task":"Atelier interfaces"}]}
 ```
 
 `person` vide = pas de contrôle d'onglet. `days` est la valeur source ; les heures sont recalculées côté classeur. Une version différente est refusée : extension et scripts se mettent à jour ensemble.
