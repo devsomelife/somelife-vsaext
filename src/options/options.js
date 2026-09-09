@@ -521,9 +521,12 @@ async function refreshSetup() {
   $('timesheet-url').value = url;
   $('language').value = await getLanguage();
   // CRA preferences are independent of the VSA site, so they load before the
-  // early return below.
+  // early return below. Both the field and the Open link are restored: a field
+  // left empty invites retyping, and a typo would silently replace a good value.
   $('cra-sheet').value = await getCraSheetName();
-  updateCraLink(await getCraUrl());
+  const craUrl = await getCraUrl();
+  $('cra-url').value = craUrl;
+  updateCraLink(craUrl);
   $('setup').classList.toggle('unset', !url);
 
   if (!url) {
