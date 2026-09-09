@@ -29,6 +29,11 @@ jobs:
       - name: Unit tests
         run: node --test
 
+      - name: Office Script bundles are up to date
+        run: |
+          node tools/cra-import/build.mjs
+          git diff --exit-code -- tools/cra-import/dist
+
       - name: Build archive and validate the manifest inside it
         run: |
           version=$(node -p "require('./manifest.json').version")
