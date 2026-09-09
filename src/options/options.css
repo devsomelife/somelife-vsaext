@@ -49,3 +49,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .pref-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
 .pref-row label { font-weight: 600; margin: 0; }
 .pref-row select { font: inherit; padding: 5px 8px; border: 1px solid #bbb; border-radius: 4px; }
+.pref-row input { flex: 1 1 320px; font: inherit; padding: 5px 8px; border: 1px solid #bbb; border-radius: 4px; }
+.pref-row a { font-size: 13px; }
+
+/* Shown only when the clipboard cannot be written, so the block can still be
+   selected and copied by hand. */
+#cra-fallback { width: 100%; box-sizing: border-box; margin-top: 10px; font: 12px ui-monospace, monospace; }
