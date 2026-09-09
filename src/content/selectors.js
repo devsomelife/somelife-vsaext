@@ -25,9 +25,32 @@ const VSA = {
   // exists but is never populated.
   projectSelectFor: (row) => `select.select_order[name="line[${row}][order_id]"]`,
 
-  // Clients are the options under <optgroup label="Customers">; the rest of the
-  // dropdown is internal activities, which have no project list.
-  customersGroupLabel: 'Customers',
+  // Clients carry a "C-" code; internal activities carry "I-". The codes are
+  // the same in every locale, unlike the optgroup labels ("Customers" in
+  // English, "Clients" in French), so the code is what identifies a client.
+  clientCodePrefix: 'C-',
+
+  // The client optgroup per language, used as a fallback when an instance
+  // shapes its codes differently. Set from the options page; "auto" reads the
+  // page's own lang attribute.
+  customersGroupLabels: { en: 'Customers', fr: 'Clients' },
+
+  language: 'auto',
+
+  resolvedLanguage() {
+    if (VSA.language !== 'auto') return VSA.language;
+    const pageLang = (document.documentElement.lang || '').slice(0, 2).toLowerCase();
+    return pageLang in VSA.customersGroupLabels ? pageLang : 'en';
+  },
+
+  // Accepts the label for the resolved language, and for the others too: the
+  // code is the real signal, so a mismatched preference must not break sync.
+  isClientOption(option) {
+    if (option.value.startsWith(VSA.clientCodePrefix)) return true;
+    const group = option.parentElement;
+    if (group?.tagName !== 'OPTGROUP') return false;
+    return Object.values(VSA.customersGroupLabels).includes(group.label.trim());
+  },
   descriptionFor: (row) => `#description_${row}`,
   formatFor: (row) => `#input_format_${row}`,
   // These ids contain "((" and "[[", which are invalid CSS selector syntax --

@@ -40,3 +40,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .url-row input { flex: 1 1 380px; font: inherit; padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; }
 .hint { margin: 8px 0 0; font-size: 13px; color: #666; min-height: 1.2em; }
 #setup.unset { border-color: #c60; }
+
+.pref-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+.pref-row label { font-weight: 600; margin: 0; }
+.pref-row select { font: inherit; padding: 5px 8px; border: 1px solid #bbb; border-radius: 4px; }
