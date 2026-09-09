@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, e.g. 0.2.0'
+        required: true
+        type: string
+
+# Needed to push the version commit and tag, and to create the release.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Tags are needed to detect an existing release, and the token is
+          # persisted so the version commit can be pushed back.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Set the version in manifest.json
+        run: node .github/scripts/set-version.mjs "${{ inputs.version }}"
+
+      # The release must not ship something that fails the normal checks.
+      - name: Validate
+        run: |
+          node .github/scripts/check-syntax.mjs
+          node .github/scripts/validate-manifest.mjs
+
+      - name: Read the resulting version
+        id: v
+        run: echo "version=$(node -p "require('./manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse to overwrite an existing tag
+        run: |
+          tag="v${{ steps.v.outputs.version }}"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null ||
+             git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null 2>&1; then
+            echo "::error::$tag already exists. Pick a different version."
+            exit 1
+          fi
+
+      - name: Build the archive
+        run: zip -r -q "vsa-ext-${{ steps.v.outputs.version }}.zip" manifest.json src icons docs/guide.html
+
+      - name: Verify the archive is loadable
+        run: node .github/scripts/validate-manifest.mjs --zip "vsa-ext-${{ steps.v.outputs.version }}.zip"
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "chore: release v${{ steps.v.outputs.version }}"
+          git tag -a "v${{ steps.v.outputs.version }}" -m "v${{ steps.v.outputs.version }}"
+          git push origin HEAD:"${{ github.ref_name }}"
+          git push origin "v${{ steps.v.outputs.version }}"
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v${{ steps.v.outputs.version }}" \
+            "vsa-ext-${{ steps.v.outputs.version }}.zip" \
+            --title "v${{ steps.v.outputs.version }}" \
+            --generate-notes
