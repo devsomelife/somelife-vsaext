@@ -5,15 +5,20 @@ h1 { font-size: 18px; margin: 0; }
 .month-nav { display: flex; gap: 4px; align-items: center; }
 /* Fixed layout so the widths below are honoured instead of being derived from
    content: project labels are long enough to starve every other column. */
-table { border-collapse: collapse; width: 100%; margin-top: 16px; table-layout: fixed; }
+table { border-collapse: collapse; width: 100%; margin-top: 16px; table-layout: fixed;
+        min-width: 860px; }
 
-/* Every column is sized, except project which takes whatever is left. */
-col.c-date { width: 130px; }
-col.c-client { width: 240px; }
-col.c-project { width: auto; }
-col.c-days { width: 80px; }
-col.c-note { width: 220px; }
-col.c-del { width: 40px; }
+/* Below the table's min-width the wrapper scrolls, rather than every column
+   shrinking. Percentages keep the columns in proportion above it; project is
+   given the largest share because its labels are by far the longest. */
+.grid-scroll { overflow-x: auto; }
+
+col.c-date { width: 12%; min-width: 120px; }
+col.c-client { width: 20%; min-width: 150px; }
+col.c-project { width: 38%; min-width: 220px; }
+col.c-days { width: 8%; min-width: 70px; }
+col.c-note { width: 18%; min-width: 120px; }
+col.c-del { width: 4%; min-width: 36px; }
 th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
 /* Long project labels must not force the table wider than the viewport. */
 td, th { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
