@@ -22,14 +22,16 @@ dependencies: the files in `src/` are what Chrome loads.
 | `src/content/main.js` | Content script entry and message handling. |
 | `src/options/` | The tracking page. |
 | `src/shared/store.js` | Entry model and `chrome.storage` access. |
-| `tools/` | Packaging and the console catalog dumper. |
+| `src/shared/config.js` | The user's timesheet URL and its match patterns. |
+| `src/background.js` | Registers the content script for the configured URL. |
+| `tools/dump-catalog.js` | Console fallback for reading the client catalog. |
+| `.github/scripts/` | The checks CI runs. |
 
 ## Before opening a pull request
 
 ```bash
-find src tools -name '*.js' -exec node --check {} \;
+node .github/scripts/check-syntax.mjs
 node .github/scripts/validate-manifest.mjs
-./tools/package.sh
 ```
 
 CI runs the same checks. They cover syntax and the manifest, not behaviour:

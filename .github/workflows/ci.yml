@@ -9,6 +9,9 @@ on:
 permissions:
   contents: read
 
+# The extension has no build step and no dependencies: Chrome loads the sources
+# as they are. These checks cover what actually breaks it, which is a syntax
+# error or a manifest pointing at a file that is not there.
 jobs:
   validate:
     name: Validate extension
@@ -20,23 +23,14 @@ jobs:
         with:
           node-version: '20'
 
-      # No build step and no dependencies: the extension ships the sources
-      # Chrome loads. These checks guard the things that actually break it.
       - name: Syntax check every JavaScript file
-        run: ./.github/scripts/check-syntax.sh
+        run: node .github/scripts/check-syntax.mjs
 
-      - name: Validate manifest and referenced files
-        run: node .github/scripts/validate-manifest.mjs
-
-      - name: Check shell scripts
+      - name: Build archive and validate the manifest inside it
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          shellcheck tools/*.sh .github/scripts/*.sh
-
-      - name: Verify the package builds and is loadable
-        run: |
-          ./tools/package.sh
-          node .github/scripts/validate-manifest.mjs --zip vsa-ext-*.zip
+          version=$(node -p "require('./manifest.json').version")
+          zip -r -q "vsa-ext-${version}.zip" manifest.json src icons docs/guide.html
+          node .github/scripts/validate-manifest.mjs --zip "vsa-ext-${version}.zip"
 
       - uses: actions/upload-artifact@v4
         with:

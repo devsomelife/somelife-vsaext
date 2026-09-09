@@ -12,9 +12,14 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Sharing
 
-`./tools/package.sh` builds `vsa-ext-<version>.zip` with the runtime files and
-the user guide (no git metadata, tools or CI config). Send that zip; the recipient unzips it and
-loads the folder as below.
+CI attaches a ready-made archive to every run: open the Actions tab, pick a run
+and download the `extension` artifact. To build one locally:
+
+```bash
+zip -r vsa-ext.zip manifest.json src icons docs/guide.html
+```
+
+Send that zip; the recipient unzips it and loads the folder as below.
 
 Chrome cannot install a zip directly -- it must be unzipped first, and the
 folder has to stay put, since "Load unpacked" references it on disk rather than
