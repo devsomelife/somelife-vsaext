@@ -21,10 +21,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Syntax check every JavaScript file
         run: node .github/scripts/check-syntax.mjs
+
+      - name: Unit tests
+        run: node --test
 
       - name: Build archive and validate the manifest inside it
         run: |
