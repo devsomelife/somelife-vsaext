@@ -5,10 +5,12 @@ Local Chrome extension for the VSA timesheet pivot page
 
 User documentation (French): [docs/guide.html](docs/guide.html).
 
+Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Sharing
 
-`./tools/package.sh` builds `vsa-ext-<version>.zip` with just the runtime files
-(no git metadata, README or tools). Send that zip; the recipient unzips it and
+`./tools/package.sh` builds `vsa-ext-<version>.zip` with the runtime files and
+the user guide (no git metadata, tools or CI config). Send that zip; the recipient unzips it and
 loads the folder as below.
 
 Chrome cannot install a zip directly -- it must be unzipped first, and the

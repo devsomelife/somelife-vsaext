@@ -1,0 +1,35 @@
+name: VSA page changed
+description: The extension stopped working because VSA's own page changed.
+labels: [bug, vsa-dom]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The extension drives VSA's real form, so a markup change on their side
+        breaks it. Selectors live in one file: `src/content/selectors.js`.
+
+        Redact client names and project codes before pasting any HTML.
+
+  - type: dropdown
+    id: element
+    attributes:
+      label: Which element
+      options:
+        - Activity / client dropdown
+        - Project ("mission / project") dropdown
+        - Day cells
+        - Add line button
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: html
+    attributes:
+      label: Current HTML
+      description: >
+        Right-click the element on the VSA page, Inspect, then copy the outer
+        HTML of its cell.
+      render: html
+    validations:
+      required: true
