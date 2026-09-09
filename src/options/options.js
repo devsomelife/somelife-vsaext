@@ -1,4 +1,12 @@
 import {
+  getTimesheetUrl,
+  setTimesheetUrl,
+  normalizeUrl,
+  matchPatternFor,
+  originPatternFor,
+  describeUrlError,
+} from '../shared/config.js';
+import {
   loadEntries,
   saveEntries,
   entriesForMonth,
@@ -13,6 +21,8 @@ const statusEl = $('status');
 
 let entries = [];
 let catalog = [];
+// True once a timesheet URL is set and its host permission is granted.
+let configured = false;
 
 const todayMonth = new Date().toISOString().slice(0, 7);
 
@@ -159,8 +169,7 @@ function render() {
   const shown = entriesForMonth(entries, currentMonth());
   rowsEl.replaceChildren(...shown.map((e) => rowTemplate(e)));
   updateTotal();
-
-  $('inject').disabled = catalog.length === 0;
+  updateButtons();
 }
 
 // The catalog lives in chrome.storage.local, so a synced list survives page
@@ -193,8 +202,6 @@ async function persist() {
 
 // Talks to the VSA tab. The content script only runs on the timesheet page, so
 // a missing receiver means the user is not on it.
-const VSA_TAB_URL = 'https://vsa.example.com/o_services/timesheetspivot*';
-
 const CONTENT_SCRIPTS = [
   'src/content/selectors.js',
   'src/content/widen.js',
@@ -207,7 +214,10 @@ const CONTENT_SCRIPTS = [
 // does not exist". Rather than make the user reload VSA, inject on demand and
 // retry once.
 async function sendToVsa(message) {
-  const [tab] = await chrome.tabs.query({ url: VSA_TAB_URL });
+  const url = await getTimesheetUrl();
+  if (!url) throw new Error('Set your VSA timesheet URL first.');
+
+  const [tab] = await chrome.tabs.query({ url: matchPatternFor(url) });
   if (!tab) throw new Error('Open the VSA timesheet page first, then retry.');
 
   try {
@@ -399,6 +409,66 @@ $('reset-catalog').addEventListener('click', () => {
   }
 });
 
+// Chrome only grants host permissions from a user gesture, so this must run
+// directly in the click handler rather than after an await chain.
+$('save-url').addEventListener('click', async () => {
+  const raw = $('timesheet-url').value.trim();
+  if (!raw) return setUrlStatus('Enter your VSA timesheet URL.', true);
+
+  let origins;
+  try {
+    origins = [originPatternFor(raw)];
+  } catch (err) {
+    return setUrlStatus(describeUrlError(err), true);
+  }
+
+  const granted = await chrome.permissions.request({ origins });
+  if (!granted) {
+    return setUrlStatus('Access denied. The extension cannot reach that site without it.', true);
+  }
+
+  await setTimesheetUrl(raw);
+  const res = await chrome.runtime.sendMessage({ type: 'sync-registration' });
+  if (!res?.ok || !res.registered) {
+    return setUrlStatus(`Saved, but activation failed: ${res?.error || res?.reason}`, true);
+  }
+  await refreshSetup();
+  setUrlStatus('Saved. Open your timesheet page and sync.', false);
+});
+
+function setUrlStatus(msg, isError) {
+  const el = $('url-status');
+  el.textContent = msg;
+  el.style.color = isError ? '#c33' : '#2a7';
+}
+
+// Reflects the configured URL and whether the extension is active for it.
+async function refreshSetup() {
+  const url = await getTimesheetUrl();
+  $('timesheet-url').value = url;
+  $('setup').classList.toggle('unset', !url);
+
+  if (!url) {
+    configured = false;
+    updateButtons();
+    setUrlStatus('Paste the address of your VSA timesheet page to begin.', false);
+    return false;
+  }
+
+  configured = await chrome.permissions.contains({ origins: [originPatternFor(url)] });
+  updateButtons();
+  if (!configured) {
+    setUrlStatus('Access to this site was revoked. Save again to restore it.', true);
+  }
+  return configured;
+}
+
+// Sync needs a configured site; inject additionally needs a synced catalog.
+function updateButtons() {
+  $('sync').disabled = !configured;
+  $('inject').disabled = !configured || catalog.length === 0;
+}
+
 $('month').addEventListener('change', render);
 $('prev-month').addEventListener('click', () => shiftMonth(-1));
 $('next-month').addEventListener('click', () => shiftMonth(1));
@@ -407,7 +477,9 @@ $('next-month').addEventListener('click', () => shiftMonth(1));
   $('month').value = todayMonth;
   entries = await loadEntries();
   catalog = (await chrome.storage.local.get('catalog')).catalog || [];
+  const ready = await refreshSetup();
   render();
+  if (!ready) return;
   if (catalog.length === 0) {
     say('Open the VSA timesheet page, then sync clients & projects to start.', true);
   } else {

@@ -1,7 +1,10 @@
 # VSA Ext
 
-Local Chrome extension for the VSA timesheet pivot page
-(`https://vsa.example.com/o_services/timesheetspivot/`).
+Local Chrome extension for the VSA timesheet pivot page.
+
+The timesheet URL is configured in the extension, not hardcoded: set it on the
+options page on first run and grant access to that site when Chrome asks. The
+content script is then registered for that address.
 
 User documentation (French): [docs/guide.html](docs/guide.html).
 
@@ -22,6 +25,7 @@ copying it. Bump `version` in `manifest.json` when sharing an update.
 1. Chrome -> `chrome://extensions`
 2. Enable Developer mode
 3. "Load unpacked" -> pick this directory
+4. Open the options page and set your VSA timesheet URL
 
 ## Features
 

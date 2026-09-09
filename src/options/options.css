@@ -33,3 +33,10 @@ td select { width: 100%; max-width: 100%; box-sizing: border-box; border: 0; bac
 td select:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
 td select:disabled { color: #999; }
 button:disabled { opacity: .5; cursor: not-allowed; }
+
+#setup { margin-top: 20px; padding: 14px 16px; border: 1px solid var(--line, #ccc); border-radius: 6px; }
+#setup label { display: block; font-weight: 600; margin-bottom: 6px; }
+.url-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.url-row input { flex: 1 1 380px; font: inherit; padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; }
+.hint { margin: 8px 0 0; font-size: 13px; color: #666; min-height: 1.2em; }
+#setup.unset { border-color: #c60; }
