@@ -1,7 +1,7 @@
 // Shadow tracking data model.
 //
 // An entry is one day of time on one activity line:
-//   { date: "2026-09-08", client: "DE RIJKE FRANCE",
+//   { date: "2026-09-08", client: "NORTHWIND TRADING",
 //     project: "BS-26-000057 [...]", projectCode: "98567|ATE", days: 1, note: "" }
 //
 // `projectCode` is the VSA option value; it is what injection matches on, since
