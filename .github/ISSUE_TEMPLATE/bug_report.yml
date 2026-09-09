@@ -55,5 +55,3 @@ body:
     attributes:
       label: Chrome version
       placeholder: "chrome://version"
-    validations:
-      required: true
