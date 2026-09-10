@@ -1,6 +1,8 @@
 # VSA Ext
 
-Local Chrome extension for the VSA timesheet pivot page.
+Chrome extension for the VSA timesheet pivot page.
+
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke).
 
 The timesheet URL is configured in the extension, not hardcoded: set it on the
 options page on first run and grant access to that site when Chrome asks. The
@@ -14,7 +16,10 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Sharing
 
-Released versions are on the Releases page, with the zip attached. CI also
+Share the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke) link: it installs in one click and
+keeps everyone up to date.
+
+For a build that is not on the store yet, released versions are on the Releases page, with the zip attached. CI also
 attaches an archive to every run: open the Actions tab, pick a run and download
 the `extension` artifact. To build one locally:
 
@@ -30,11 +35,22 @@ copying it. Bump `version` in `manifest.json` when sharing an update.
 
 ## Install
 
+From the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke): click "Add to Chrome". Updates install
+automatically.
+
+Then open the extension's options page and set your VSA timesheet URL. The
+`Open` button next to it opens that page in a new tab.
+
+### Unpacked Build
+
+For development or a build that is not on the store yet:
+
 1. Chrome -> `chrome://extensions`
 2. Enable Developer mode
 3. "Load unpacked" -> pick this directory
-4. Open the options page and set your VSA timesheet URL. The `Open` button next
-   to it then opens that page in a new tab
+4. Set your VSA timesheet URL on the options page, as above
+
+Remove the store version first, or both copies run side by side.
 
 ## Features
 
