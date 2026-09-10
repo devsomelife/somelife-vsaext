@@ -1,6 +1,8 @@
 import {
   getLanguage,
   setLanguage,
+  getNotesToVsa,
+  setNotesToVsa,
   getTimesheetUrl,
   setTimesheetUrl,
   normalizeUrl,
@@ -442,7 +444,8 @@ $('inject').addEventListener('click', async () => {
   }
   say(`Injecting ${shown.length} entries...`);
   try {
-    const res = await sendToVsa({ type: 'inject', entries: shown });
+    const sendNotes = await getNotesToVsa();
+    const res = await sendToVsa({ type: 'inject', entries: shown, options: { sendNotes } });
     if (!res?.ok) throw new Error(res?.error || 'no response');
     const bad = res.report.filter((r) => !r.ok);
     const lines = `${res.prepared}/${res.total} lines prepared`;
@@ -454,8 +457,10 @@ $('inject').addEventListener('click', async () => {
         true
       );
     } else {
+      const comments = res.report.reduce((sum, r) => sum + (r.comments || 0), 0);
       say(
         `Injected ${shown.length} entries.` +
+          (sendNotes ? ` ${comments} day comment(s) written.` : '') +
           (skipped ? ` ${skipped} incomplete row(s) skipped.` : '') +
           ' Review the grid, then press Save in VSA.'
       );
@@ -532,6 +537,7 @@ async function refreshSetup() {
   $('timesheet-url').value = url;
   setOpenButton('open-timesheet', url);
   $('language').value = await getLanguage();
+  $('notes-to-vsa').checked = await getNotesToVsa();
   // CRA preferences are independent of the VSA site, so they load before the
   // early return below. Both the field and the Open button are restored: a field
   // left empty invites retyping, and a typo would silently replace a good value.
@@ -567,6 +573,16 @@ function updateButtons() {
 $('language').addEventListener('change', async () => {
   await setLanguage($('language').value);
   setUrlStatus('Language preference saved.', false);
+});
+
+$('notes-to-vsa').addEventListener('change', async () => {
+  await setNotesToVsa($('notes-to-vsa').checked);
+  setUrlStatus(
+    $('notes-to-vsa').checked
+      ? 'Notes will be written as day comments in VSA on the next injection.'
+      : 'Notes will no longer be sent to VSA.',
+    false
+  );
 });
 
 $('month').addEventListener('change', render);

@@ -61,6 +61,8 @@ elle ne peut atteindre aucun site.</p>
 <p>Le réglage <b>VSA language</b> juste en dessous suit par défaut la langue de votre VSA.
 Laissez-le sur <i>Detect automatically</i> ; ne le forcez que si la détection se trompe.</p>
 
+<p>La case <b>Send notes to VSA as day comments</b> est décochée par défaut. Cochée, le report inscrit chaque note comme commentaire du jour dans VSA ; décochée, vos notes ne partent jamais vers VSA.</p>
+
 <p>Deux champs facultatifs servent à l'envoi vers le <b>CRA d'équipe</b> (voir plus bas) :
 <b>CRA sheet tab</b>, le nom exact de votre onglet dans le classeur (par exemple <code>Camille DUPONT</code>),
 qui empêche de coller votre mois dans l'onglet d'un collègue ; et <b>CRA workbook URL</b>, le lien du classeur,
@@ -95,7 +97,7 @@ Seuls les clients sont chargés : les activités internes (Absence, Formation...
   <li>Choisissez le <b>client</b>, puis le <b>projet</b>. La liste des projets ne propose que ceux du client retenu.</li>
   <li><b>Days</b> avance par huitièmes : <code>0,125</code> vaut une heure, <code>0,5</code> une demi-journée,
       <code>1</code> une journée complète.</li>
-  <li><b>Note</b> n'est jamais transmise à VSA. Elle devient en revanche la colonne <b>Tâche</b> du CRA d'équipe
+  <li><b>Note</b> n'est transmise à VSA que si vous cochez <b>Send notes to VSA as day comments</b> : elle devient alors le commentaire du jour dans VSA. Elle devient aussi la colonne <b>Tâche</b> du CRA d'équipe
       quand vous envoyez votre mois (voir plus bas) : écrivez-la pour vos collègues.</li>
   <li><span class="btn">&lt;</span> et <span class="btn">&gt;</span> changent de mois.</li>
 </ul>

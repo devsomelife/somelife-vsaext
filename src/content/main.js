@@ -26,7 +26,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
 
   if (msg?.type === 'inject') {
     const post = (m) => chrome.runtime.sendMessage(m).catch(() => {});
-    VsaInject.injectEntries(msg.entries, (p) => post({ type: 'inject-progress', ...p }))
+    VsaInject.injectEntries(msg.entries, (p) => post({ type: 'inject-progress', ...p }), msg.options || {})
       .then((res) => sendResponse({ ok: true, ...res }))
       .catch((err) => sendResponse({ ok: false, error: String(err.message || err) }));
     return true; // async

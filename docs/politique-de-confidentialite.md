@@ -15,13 +15,14 @@ Enregistrées uniquement dans votre navigateur, sur cet ordinateur (`chrome.stor
 
 - Les journées et les notes que vous saisissez.
 - La liste des clients et des projets lue dans VSA.
-- Vos réglages : adresse VSA, langue, nom de l'onglet CRA et adresse du classeur CRA.
+- Vos réglages : adresse VSA, langue, nom de l'onglet CRA, adresse du classeur CRA et envoi ou non des notes vers VSA.
 
 ## Données partagées
 
 - Rien n'est envoyé au développeur ni à un tiers. Il n'y a ni serveur, ni statistiques, ni suivi.
 - Pour remplir votre feuille de temps, l'extension utilise votre page VSA comme vous le feriez à la main : les requêtes partent uniquement vers votre propre site VSA.
 - Les données ne sortent de l'extension que si vous le décidez : `Copy for CRA sheet` copie le mois dans le presse-papiers, et `Export JSON` ou `Export CSV` enregistre un fichier.
+- Les notes ne sont inscrites comme commentaires du jour dans votre feuille VSA que si vous cochez `Send notes to VSA as day comments`. Comme le reste, elles ne sont enregistrées que lorsque vous cliquez sur Enregistrer dans VSA.
 
 ## Autorisations
 

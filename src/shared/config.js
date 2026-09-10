@@ -22,6 +22,20 @@ export async function setLanguage(lang) {
   await chrome.storage.local.set({ [LANG_KEY]: lang });
 }
 
+const NOTES_KEY = 'notesToVsa';
+
+// Whether injection also writes each note as that day's comment in VSA. Off by
+// default: notes were documented as never sent to VSA, so users must opt in
+// rather than discover their notes in VSA after an update.
+export async function getNotesToVsa() {
+  const bag = await chrome.storage.local.get(NOTES_KEY);
+  return bag[NOTES_KEY] === true;
+}
+
+export async function setNotesToVsa(enabled) {
+  await chrome.storage.local.set({ [NOTES_KEY]: enabled === true });
+}
+
 export async function getTimesheetUrl() {
   const bag = await chrome.storage.local.get(KEY);
   return bag[KEY] || '';

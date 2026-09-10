@@ -76,6 +76,8 @@ and writes the rows, all or nothing. Rows it wrote earlier for the same month
 (column `Source` = `VSA Ext`) are replaced; rows typed by hand are left alone.
 The note becomes the workbook's `Tâche` column, so it is no longer private once
 you send a month.
+With `Send notes to VSA as day comments` ticked (off by default), injection also
+writes each note as that day's comment in VSA.
 
 Two optional settings on the options page: `CRA sheet tab` (your tab's exact
 name, so a block cannot land in a colleague's tab) and `CRA workbook URL` (enables
@@ -155,6 +157,9 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
 - `input#input_day_((<row>))_[[<n>]]` day value, `input#input_hour_...` hours.
 - `input#input_format_<row>` is `HOUR` or `DAY` and decides which of the two
   fields is authoritative for that line.
+- `input#comment_<n>_<row>` (`name="tdesc[<row>][day][<n>]"`) is the day comment.
+  Its inline `checkCommentValue` makes no network call but toggles the comment
+  popup open, so injection closes it again. It is saved with the rest of the form.
 
 ## Verification status
 

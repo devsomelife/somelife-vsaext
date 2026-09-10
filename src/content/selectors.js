@@ -14,6 +14,10 @@
 //     input#input_day_((<row>))_[[<n>]]    value in days   name="line[<row>][day][<n>][unit]"
 //     input#input_hour_((<row>))_[[<n>]]   value in hours  name="line[<row>][day][<n>][unit_hour]"
 //     hidden line[<row>][day][<n>][tval] and [order_id]
+//     input#comment_<n>_<row>              day comment     name="tdesc[<row>][day][<n>]"
+//       inline onchange="checkCommentValue(<row>,<n>,<skin>)": no network call. It
+//       swaps the comment icon, marks the page modified and TOGGLES the popup
+//       div#div_comment_<n>_<row>. Saved by Save with the rest of the form.
 //
 // The visible unit is per line: input#input_format_<row> is "HOUR" or "DAY".
 
@@ -57,6 +61,8 @@ const VSA = {
   // they must be looked up with getElementById, never querySelector.
   dayInputId: (row, n) => `input_day_((${row}))_[[${n}]]`,
   hourInputId: (row, n) => `input_hour_((${row}))_[[${n}]]`,
+  commentInputId: (row, n) => `comment_${n}_${row}`,
+  commentPopupId: (row, n) => `div_comment_${n}_${row}`,
   // The "+" button: <a class="mainaction-add-like-plus"
   //   onclick="addLine('UITimesheetPivot','<ctx>')">
   addLineButton: 'a.mainaction-add-like-plus',

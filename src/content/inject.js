@@ -133,6 +133,34 @@ function writeDay(row, dayNumber, days) {
   return { field: id, wrote: input.value, unit: asHours ? 'hour' : 'day' };
 }
 
+// Writes one day comment. VSA's own handler is called so the icon and the
+// page's modified flag update as if typed by hand. That handler also toggles
+// the comment popup, which would leave it open, so it is closed afterwards.
+function writeComment(row, dayNumber, text) {
+  const input = document.getElementById(VSA.commentInputId(row, dayNumber));
+  if (!input) throw new Error(`row ${row}: no comment field for day ${dayNumber}`);
+  input.value = text;
+  if (typeof input.onchange === 'function') input.onchange();
+  else fire(input, 'change');
+  const popup = document.getElementById(VSA.commentPopupId(row, dayNumber));
+  if (popup) popup.style.display = 'none';
+}
+
+// Notes of one line, by day number. Distinct notes of the same day are joined;
+// days without a note are left out, so an existing VSA comment stays untouched.
+function commentsByDay(days) {
+  const byDay = new Map();
+  for (const e of days) {
+    const note = String(e.note || '').trim();
+    if (!note) continue;
+    const n = dayNumber(e.date);
+    const list = byDay.get(n) || [];
+    if (!list.includes(note)) list.push(note);
+    byDay.set(n, list);
+  }
+  return new Map([...byDay].map(([n, list]) => [n, list.join(' ; ')]));
+}
+
 // Entries are grouped per client+project: one VSA line carries a whole month,
 // so we reuse a line rather than creating one per day.
 function groupByLine(entries) {
@@ -209,7 +237,7 @@ async function prepareLines(entries, onProgress) {
   return prepared;
 }
 
-function writeTimes(prepared, onProgress) {
+function writeTimes(prepared, onProgress, options = {}) {
   const report = [];
 
   for (let i = 0; i < prepared.length; i++) {
@@ -233,12 +261,21 @@ function writeTimes(prepared, onProgress) {
       for (const e of g.days) {
         writeDay(g.row, dayNumber(e.date), e.days);
       }
+      // Opt-in: notes become VSA day comments only when the user enabled it.
+      let comments = 0;
+      if (options.sendNotes) {
+        for (const [n, text] of commentsByDay(g.days)) {
+          writeComment(g.row, n, text);
+          comments++;
+        }
+      }
       report.push({
         client: g.client,
         project: g.project,
         row: g.row,
         ok: true,
         count: g.days.length,
+        comments,
       });
     } catch (err) {
       report.push({
@@ -254,9 +291,9 @@ function writeTimes(prepared, onProgress) {
   return report;
 }
 
-async function injectEntries(entries, onProgress) {
+async function injectEntries(entries, onProgress, options = {}) {
   const prepared = await prepareLines(entries, onProgress);
-  const report = writeTimes(prepared, onProgress);
+  const report = writeTimes(prepared, onProgress, options);
   return {
     report,
     prepared: prepared.filter((g) => g.ok).length,
@@ -318,5 +355,7 @@ globalThis.VsaInject = {
   writeTimes,
   fetchCatalog,
   writeDay,
+  writeComment,
+  commentsByDay,
   groupByLine,
 };
