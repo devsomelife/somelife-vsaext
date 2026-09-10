@@ -13,6 +13,13 @@ export const PASTE_PROMPT = "← Coller ici le bloc VSA Ext";
 export const REF_TABLE = "T_Projets";
 export const HOURS_NAME = "HeuresParJour";
 export const DEFAULT_HOURS_PER_DAY = 8;
+// Fixed on purpose: copying the existing rows' format came back from Excel as
+// "m/d/yyyy" and displayed month-first in the French workbook (recette R5).
+export const DATE_FORMAT = "dd/mm/yyyy";
+// The import button is anchored on row 22; a script button is taller than the
+// default 15 pt row and would overlap the paste cell below (recette R3).
+export const BUTTON_ROW = "22:22";
+export const BUTTON_ROW_HEIGHT = 24;
 
 export type CellValue = string | number | boolean;
 

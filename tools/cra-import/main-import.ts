@@ -72,7 +72,7 @@ function main(workbook: ExcelScript.Workbook) {
   let body = table.getRangeBetweenHeaderAndTotal();
   const values = body.getValues();
   const placement = planPlacement(values, col, payload.month, plan.rows.length);
-  const dateFormat = findDateFormat(body, values, col.date);
+  const dateFormat = DATE_FORMAT;
   const formulas = calcFormulas(table.getName());
 
   placement.reuse.forEach((rowIndex, k) => writeRow(body.getRow(rowIndex), plan.rows[k], col, dateFormat, formulas));
@@ -97,14 +97,6 @@ function readHoursPerDay(workbook: ExcelScript.Workbook): number {
   const item = workbook.getNamedItem(HOURS_NAME);
   const v = item ? Number(item.getRange().getValue()) : NaN;
   return v > 0 ? v : DEFAULT_HOURS_PER_DAY;
-}
-
-// Existing rows decide how dates look, so imported ones match them.
-function findDateFormat(body: ExcelScript.Range, values: CellValue[][], dateCol: number): string {
-  for (let i = 0; i < values.length; i++) {
-    if (typeof values[i][dateCol] === "number") return body.getCell(i, dateCol).getNumberFormat();
-  }
-  return "dd/mm/yyyy";
 }
 
 // Text columns are typed as text first so a task starting with "=" stays text.
