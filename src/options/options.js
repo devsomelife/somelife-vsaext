@@ -115,7 +115,7 @@ function rowTemplate(e) {
     <td><select data-f="project"></select></td>
     <td class="days"><input data-f="days" type="number" step="0.125" min="0" max="1"></td>
     <td><input data-f="note"></td>
-    <td><button type="button" data-act="del">x</button></td>`;
+    <td><button type="button" class="danger" data-act="del" title="Delete line" aria-label="Delete line">x</button></td>`;
 
   const clientSel = tr.querySelector('[data-f="client"]');
   clientSel.innerHTML = optionsHtml(clientLabels(), e.client || '', 'Client...');

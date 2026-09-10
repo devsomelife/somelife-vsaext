@@ -33,6 +33,9 @@ button { font: inherit; padding: 6px 12px; cursor: pointer; }
 
 .vsa-actions { border-top: 1px solid #ccc; padding-top: 16px; }
 button.primary { background: #2a7; color: #fff; border: 1px solid #248; font-weight: 600; }
+/* Destructive actions. Same red as error messages in the status line. */
+button.danger { background: #c33; color: #fff; border: 1px solid #922; font-weight: 600; }
+td button.danger { padding: 2px 8px; }
 
 td select { width: 100%; max-width: 100%; box-sizing: border-box; border: 0; background: transparent; font: inherit; color: inherit; }
 td select:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
