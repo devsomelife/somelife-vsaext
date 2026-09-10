@@ -68,7 +68,7 @@ const DATE_FORMAT = "dd/mm/yyyy";
 // The import button is anchored on row 22; a script button is taller than the
 // default 15 pt row and would overlap the paste cell below (recette R3).
 const BUTTON_ROW = "22:22";
-const BUTTON_ROW_HEIGHT = 24;
+const BUTTON_ROW_HEIGHT = 30;
 
 type CellValue = string | number | boolean;
 
