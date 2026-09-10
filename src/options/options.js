@@ -350,10 +350,21 @@ $('copy-cra').addEventListener('click', async () => {
   }
 });
 
-function updateCraLink(url) {
-  const a = $('cra-open');
-  a.hidden = !url;
-  if (url) a.href = url;
+// An Open button targets the saved URL, never the unsaved text in its field,
+// and stays disabled until there is one. Saved values are already normalised to
+// http(s) by config.js, so nothing else can be opened.
+function setOpenButton(id, url) {
+  const btn = $(id);
+  btn.dataset.url = url || '';
+  btn.disabled = !url;
+  btn.title = url || 'Save a URL first';
+}
+
+for (const id of ['open-timesheet', 'cra-open']) {
+  $(id).addEventListener('click', () => {
+    const url = $(id).dataset.url;
+    if (url) window.open(url, '_blank', 'noopener');
+  });
 }
 
 $('cra-sheet').addEventListener('change', async () => {
@@ -366,7 +377,7 @@ $('cra-url').addEventListener('change', async () => {
     await setCraUrl($('cra-url').value);
     const url = await getCraUrl();
     $('cra-url').value = url;
-    updateCraLink(url);
+    setOpenButton('cra-open', url);
     setUrlStatus(url ? 'CRA workbook link saved.' : 'CRA workbook link cleared.', false);
   } catch (err) {
     setUrlStatus(describeUrlError(err), true);
@@ -519,14 +530,15 @@ function setUrlStatus(msg, isError) {
 async function refreshSetup() {
   const url = await getTimesheetUrl();
   $('timesheet-url').value = url;
+  setOpenButton('open-timesheet', url);
   $('language').value = await getLanguage();
   // CRA preferences are independent of the VSA site, so they load before the
-  // early return below. Both the field and the Open link are restored: a field
+  // early return below. Both the field and the Open button are restored: a field
   // left empty invites retyping, and a typo would silently replace a good value.
   $('cra-sheet').value = await getCraSheetName();
   const craUrl = await getCraUrl();
   $('cra-url').value = craUrl;
-  updateCraLink(craUrl);
+  setOpenButton('cra-open', craUrl);
   $('setup').classList.toggle('unset', !url);
 
   if (!url) {

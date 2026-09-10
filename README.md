@@ -31,7 +31,8 @@ copying it. Bump `version` in `manifest.json` when sharing an update.
 1. Chrome -> `chrome://extensions`
 2. Enable Developer mode
 3. "Load unpacked" -> pick this directory
-4. Open the options page and set your VSA timesheet URL
+4. Open the options page and set your VSA timesheet URL. The `Open` button next
+   to it then opens that page in a new tab
 
 ## Features
 
@@ -75,8 +76,8 @@ The note becomes the workbook's `Tâche` column, so it is no longer private once
 you send a month.
 
 Two optional settings on the options page: `CRA sheet tab` (your tab's exact
-name, so a block cannot land in a colleague's tab) and `CRA workbook URL` (adds
-an `Open` link). No permission is needed: the clipboard is written from the
+name, so a block cannot land in a colleague's tab) and `CRA workbook URL` (enables
+an `Open` button). No permission is needed: the clipboard is written from the
 options page on your click.
 
 The workbook side, its install notice and the exchange contract live in
