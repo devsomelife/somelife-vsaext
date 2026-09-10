@@ -64,6 +64,24 @@ reports how many lines were prepared and which failed.
 Injection never saves. It fills the form the same way clicking would, then you
 review and press Save in VSA yourself.
 
+### Team CRA workbook
+
+`Copy for CRA sheet` copies the displayed month as one line of JSON. Paste it
+into cell I23 of your tab in the team workbook and click its `⬇ Importer VSA
+Ext` button: an Office Script checks the block against the Admin referential
+and writes the rows, all or nothing. Rows it wrote earlier for the same month
+(column `Source` = `VSA Ext`) are replaced; rows typed by hand are left alone.
+The note becomes the workbook's `Tâche` column, so it is no longer private once
+you send a month.
+
+Two optional settings on the options page: `CRA sheet tab` (your tab's exact
+name, so a block cannot land in a colleague's tab) and `CRA workbook URL` (adds
+an `Open` link). No permission is needed: the clipboard is written from the
+options page on your click.
+
+The workbook side, its install notice and the exchange contract live in
+[`tools/cra-import/`](tools/cra-import/README.md).
+
 ### "Could not establish connection. Receiving end does not exist."
 
 The options page could not reach the content script in the VSA tab. It now
@@ -109,6 +127,9 @@ backup. Storage is local to this machine and never syncs to a Google account.
 | `src/content/main.js` | Content script entry, message handling. |
 | `src/options/` | Month grid editor. |
 | `src/shared/store.js` | Entry model and `chrome.storage` access. |
+| `src/shared/cra.js` | The one-line block copied for the team CRA workbook. |
+| `tools/cra-import/` | Office Scripts for the CRA workbook (pure core, Excel glue, generated `dist/`, install notice). |
+| `test/` | `node --test` suites. |
 
 ## Notes on the VSA DOM
 

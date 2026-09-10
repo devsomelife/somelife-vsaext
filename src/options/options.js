@@ -7,6 +7,10 @@ import {
   matchPatternFor,
   originPatternFor,
   describeUrlError,
+  getCraSheetName,
+  setCraSheetName,
+  getCraUrl,
+  setCraUrl,
 } from '../shared/config.js';
 import {
   loadEntries,
@@ -16,6 +20,7 @@ import {
   normalize,
   isComplete,
 } from '../shared/store.js';
+import { buildCraPayload, serializeCraPayload } from '../shared/cra.js';
 
 const $ = (id) => document.getElementById(id);
 const rowsEl = $('rows');
@@ -165,6 +170,8 @@ function updateTotal() {
   $('row-count').textContent = shown.length
     ? `${complete}/${shown.length} row(s) ready to inject`
     : '';
+  // The CRA block needs no VSA configuration, only something complete to send.
+  $('copy-cra').disabled = complete === 0;
 }
 
 function render() {
@@ -305,6 +312,65 @@ $('export-csv').addEventListener('click', async () => {
   if (!shown.length) return say('Nothing to export for this month.', true);
   download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
   say(`Exported ${shown.length} rows for ${month}.`);
+});
+
+// The team CRA workbook takes the month as one line of JSON pasted into a cell
+// of the user's tab; an Office Script there does the writing (tools/cra-import).
+// Copying is refused, not trimmed, when a row cannot become whole hours: the
+// workbook would refuse it anyway, and later, with less context.
+$('copy-cra').addEventListener('click', async () => {
+  const month = currentMonth();
+  const person = await getCraSheetName();
+  const { payload, problems, hours, skipped } = buildCraPayload(entries, { month, person });
+  if (problems.length) {
+    return say(`Cannot copy: ${problems.join('; ')}. Days must be multiples of 0.125.`, true);
+  }
+  if (!payload.rows.length) {
+    return say('Nothing complete to copy: each row needs a project and days.', true);
+  }
+  const text = serializeCraPayload(payload);
+  const fallback = $('cra-fallback');
+  try {
+    await navigator.clipboard.writeText(text);
+    fallback.hidden = true;
+    say(
+      `Copied ${payload.rows.length} row(s) for ${month} (${hours} h)` +
+        (skipped ? `, ${skipped} incomplete row(s) skipped` : '') +
+        '. In the CRA workbook, on your tab: click cell I23, paste, then click "Importer VSA Ext".'
+    );
+  } catch {
+    fallback.value = text;
+    fallback.hidden = false;
+    fallback.focus();
+    fallback.select();
+    say(
+      'Clipboard access failed: the block is shown below. Copy it by hand (Ctrl+C), then paste it in cell I23 of your CRA tab.',
+      true
+    );
+  }
+});
+
+function updateCraLink(url) {
+  const a = $('cra-open');
+  a.hidden = !url;
+  if (url) a.href = url;
+}
+
+$('cra-sheet').addEventListener('change', async () => {
+  await setCraSheetName($('cra-sheet').value);
+  setUrlStatus('CRA tab name saved.', false);
+});
+
+$('cra-url').addEventListener('change', async () => {
+  try {
+    await setCraUrl($('cra-url').value);
+    const url = await getCraUrl();
+    $('cra-url').value = url;
+    updateCraLink(url);
+    setUrlStatus(url ? 'CRA workbook link saved.' : 'CRA workbook link cleared.', false);
+  } catch (err) {
+    setUrlStatus(describeUrlError(err), true);
+  }
 });
 
 $('import').addEventListener('click', () => $('import-file').click());
@@ -454,6 +520,13 @@ async function refreshSetup() {
   const url = await getTimesheetUrl();
   $('timesheet-url').value = url;
   $('language').value = await getLanguage();
+  // CRA preferences are independent of the VSA site, so they load before the
+  // early return below. Both the field and the Open link are restored: a field
+  // left empty invites retyping, and a typo would silently replace a good value.
+  $('cra-sheet').value = await getCraSheetName();
+  const craUrl = await getCraUrl();
+  $('cra-url').value = craUrl;
+  updateCraLink(craUrl);
   $('setup').classList.toggle('unset', !url);
 
   if (!url) {

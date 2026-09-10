@@ -60,6 +60,11 @@ elle ne peut atteindre aucun site.</p>
 <p>Le réglage <b>VSA language</b> juste en dessous suit par défaut la langue de votre VSA.
 Laissez-le sur <i>Detect automatically</i> ; ne le forcez que si la détection se trompe.</p>
 
+<p>Deux champs facultatifs servent à l'envoi vers le <b>CRA d'équipe</b> (voir plus bas) :
+<b>CRA sheet tab</b>, le nom exact de votre onglet dans le classeur (par exemple <code>Camille DUPONT</code>),
+qui empêche de coller votre mois dans l'onglet d'un collègue ; et <b>CRA workbook URL</b>, le lien du classeur,
+qui fait apparaître un raccourci <i>Open</i>.</p>
+
 <h2>Listes déroulantes lisibles</h2>
 <p>Sur la page de saisie VSA, les listes d'activité et de projet sont trop étroites pour être lues.
 Cliquez sur l'une d'elles : elle s'élargit automatiquement le temps de la consultation, puis reprend
@@ -89,7 +94,8 @@ Seuls les clients sont chargés : les activités internes (Absence, Formation...
   <li>Choisissez le <b>client</b>, puis le <b>projet</b>. La liste des projets ne propose que ceux du client retenu.</li>
   <li><b>Days</b> avance par huitièmes : <code>0,125</code> vaut une heure, <code>0,5</code> une demi-journée,
       <code>1</code> une journée complète.</li>
-  <li><b>Note</b> ne sert qu'à vous. Elle n'est jamais transmise à VSA.</li>
+  <li><b>Note</b> n'est jamais transmise à VSA. Elle devient en revanche la colonne <b>Tâche</b> du CRA d'équipe
+      quand vous envoyez votre mois (voir plus bas) : écrivez-la pour vos collègues.</li>
   <li><span class="btn">&lt;</span> et <span class="btn">&gt;</span> changent de mois.</li>
 </ul>
 <p>Tout est enregistré au fil de la frappe. Le pied de tableau affiche votre total et le nombre de lignes prêtes.</p>
@@ -111,12 +117,36 @@ n'avez pas cliqué sur Save. Si le résultat vous semble faux, rechargez la page
 lignes et sélectionne client et projet, puis elle inscrit les journées. Une ligne dont le projet
 n'a pas pu être chargé ne reçoit aucune journée, et la ligne d'état la signale.</p>
 
+<h2>Envoyer au CRA d'équipe</h2>
+<p>Le classeur <code>CRA-Equipe.xlsx</code> de l'équipe reçoit vos journées avant leur report dans VSA,
+pour validation. L'envoi se fait par copier-coller : aucun compte, aucune connexion.</p>
+<ol class="steps">
+  <li>Dans la page de l'extension, sur le bon mois, cliquez sur <span class="btn">Copy for CRA sheet</span>.
+      Le mois est copié dans le presse-papiers ; la ligne d'état indique le nombre de lignes et d'heures.</li>
+  <li>Ouvrez le classeur dans Excel (navigateur ou application) et allez sur <b>votre</b> onglet.</li>
+  <li>Cliquez sur la cellule jaune <b>I23</b> (« Coller ici le bloc VSA Ext ») et collez (<code>Ctrl+V</code>).</li>
+  <li>Cliquez sur le bouton <span class="btn">⬇ Importer VSA Ext</span> juste au-dessus.</li>
+  <li>Lisez le résultat en <b>I24</b> : <code>✔ 12 ligne(s) importée(s) pour 2026-09 (96 h)…</code>.</li>
+</ol>
+
+<div class="note">
+<b>Ce qui part :</b> les lignes complètes du mois affiché (date, projet, journées), avec la note dans la colonne
+Tâche. Les journées deviennent des heures entières (<code>0,125</code> = 1 h) : une valeur qui ne tombe pas sur une
+heure entière bloque la copie, corrigez-la d'abord.<br>
+<b>Renvoyer le même mois</b> remplace les lignes que l'extension avait déjà déposées (colonne <b>Source</b> =
+<code>VSA Ext</code>) et ne touche jamais aux lignes tapées à la main dans Excel.<br>
+<b>Un projet inconnu du classeur bloque tout l'import</b> : I24 liste ce qu'il faut ajouter dans l'onglet
+<b>Admin</b> (client et numéro <code>BS-…</code>). Complétez le référentiel, puis recliquez sur le bouton :
+le bloc est encore dans I23.
+</div>
+
 <h2>Les boutons</h2>
 <table>
   <tr><th>Bouton</th><th>Rôle</th></tr>
   <tr><td><span class="btn">Add row</span></td><td>Ajoute une ligne au mois affiché.</td></tr>
   <tr><td><span class="btn">Export JSON</span></td><td>Sauvegarde complète : tous les mois et votre liste de clients. C'est le fichier que relit <b>Import JSON</b>.</td></tr>
   <tr><td><span class="btn">Export CSV</span></td><td>Le mois affiché sous forme de tableur, pour consultation ou partage. Non réimportable.</td></tr>
+  <tr><td><span class="btn">Copy for CRA sheet</span></td><td>Copie le mois affiché dans le presse-papiers, prêt à coller dans la cellule I23 de votre onglet du CRA d'équipe.</td></tr>
   <tr><td><span class="btn">Import JSON</span></td><td>Restaure une sauvegarde. Journées et clients sont restaurés indépendamment : un fichier ne contenant que l'un laisse l'autre intact.</td></tr>
   <tr><td><span class="btn">Sync clients &amp; projects from VSA</span></td><td>Recharge vos clients et leurs projets. Sans risque à répéter : l'opération ne fait qu'ajouter ou mettre à jour.</td></tr>
   <tr><td><span class="btn">Reset catalog</span></td><td>Vide la liste des clients pour la reconstruire proprement. Vos journées saisies ne sont pas touchées.</td></tr>
@@ -144,6 +174,17 @@ le reste du mois est donc bien reporté.</p>
 <h3>« Nothing complete to inject »</h3>
 <p>Chaque ligne doit comporter un projet et un nombre de journées supérieur à zéro. Les lignes
 incomplètes restent dans la page de saisie mais sont ignorées au moment du report.</p>
+
+<h3>« Cannot copy: … not a whole number of hours »</h3>
+<p>Une ligne du mois a un nombre de journées qui ne correspond pas à des heures entières (par exemple
+<code>0,3</code>). Le CRA d'équipe compte en heures entières : ramenez la valeur à un multiple de
+<code>0,125</code>, puis recopiez.</p>
+
+<h3>Le CRA d'équipe affiche « ✖ Import refusé » en I24</h3>
+<p>Rien n'a été écrit. Le message nomme chaque problème : projet absent du référentiel Admin (ajoutez-le, avec
+son numéro <code>BS-…</code>), bloc collé dans le mauvais onglet, ou bloc abîmé au collage (recopiez depuis
+l'extension et collez dans la seule cellule I23). Corrigez, puis recliquez sur
+<span class="btn">⬇ Importer VSA Ext</span>.</p>
 
 <div class="note">
 Vos données ne résident que dans ce navigateur, sur cet ordinateur. Désinstaller l'extension les
