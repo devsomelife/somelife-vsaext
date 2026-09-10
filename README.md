@@ -8,6 +8,8 @@ content script is then registered for that address.
 
 User documentation (French): [docs/guide.html](docs/guide.html).
 
+Privacy policy: [English](docs/privacy-policy.md), [français](docs/politique-de-confidentialite.md).
+
 Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Sharing
