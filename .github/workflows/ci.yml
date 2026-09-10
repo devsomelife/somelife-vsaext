@@ -26,8 +26,22 @@ jobs:
       - name: Syntax check every JavaScript file
         run: node .github/scripts/check-syntax.mjs
 
-      - name: Unit tests
-        run: node --test
+      # Coverage comes from Node's built-in test runner, so no dependency is
+      # needed. It is informational for now: nothing fails on a low number.
+      - name: Unit tests with coverage
+        run: >
+          node --test --experimental-test-coverage
+          --test-reporter=spec --test-reporter-destination=stdout
+          --test-reporter=lcov --test-reporter-destination=lcov.info
+
+      - name: Coverage summary
+        run: node .github/scripts/coverage-summary.mjs lcov.info >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: lcov.info
+          if-no-files-found: error
 
       - name: Office Script bundles are up to date
         run: |

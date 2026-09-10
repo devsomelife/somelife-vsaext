@@ -1,19 +1,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 
 // selectors.js and inject.js are classic content scripts that register globals,
-// so they are evaluated against a fake DOM rather than imported.
+// so they run in a VM context against a fake DOM rather than being imported.
+// vm keeps each file name, which is what lets code coverage attribute the lines
+// to these files; code run through new Function is not counted at all.
 function load(document) {
-  const g = {};
   class FocusEvent extends Event {}
-  const run = (file, extra = {}) =>
-    new Function('globalThis', 'document', 'FocusEvent', ...Object.keys(extra),
-      readFileSync(new URL(file, import.meta.url), 'utf8'))(g, document, FocusEvent, ...Object.values(extra));
-  run('../src/content/selectors.js');
-  run('../src/content/inject.js', { VSA: g.VSA });
-  return g.VsaInject;
+  const ctx = vm.createContext({ document, Event, FocusEvent, setTimeout, clearTimeout });
+  for (const rel of ['../src/content/selectors.js', '../src/content/inject.js']) {
+    const file = fileURLToPath(new URL(rel, import.meta.url));
+    vm.runInContext(readFileSync(file, 'utf8'), ctx, { filename: file });
+  }
+  return ctx.VsaInject;
 }
+
+// Values built inside the VM belong to another realm, so they are copied into
+// plain arrays before a strict deep comparison.
+const entries = (map) => Array.from(map, ([key, value]) => [key, value]);
 
 // Elements are created on first lookup, so the test can inspect what was touched.
 function fakeDom() {
@@ -32,7 +39,7 @@ test('commentsByDay keeps only days that have a note, trimmed', () => {
     { date: '2026-09-02', days: 1, note: '' },
     { date: '2026-09-03', days: 0.5 },
   ]);
-  assert.deepEqual([...byDay], [[1, 'Atelier interfaces']]);
+  assert.deepEqual(entries(byDay), [[1, 'Atelier interfaces']]);
 });
 
 test('commentsByDay joins distinct notes of the same day and drops repeats', () => {
@@ -42,7 +49,7 @@ test('commentsByDay joins distinct notes of the same day and drops repeats', () 
     { date: '2026-09-04', days: 0.25, note: 'Recette' },
     { date: '2026-09-04', days: 0.25, note: 'Cadrage' },
   ]);
-  assert.deepEqual([...byDay], [[4, 'Cadrage ; Recette']]);
+  assert.deepEqual(entries(byDay), [[4, 'Cadrage ; Recette']]);
 });
 
 test('writeComment runs the VSA handler, then closes the popup it toggled open', () => {

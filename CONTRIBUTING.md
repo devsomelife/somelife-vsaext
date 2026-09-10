@@ -37,7 +37,7 @@ Node 24 or newer (the `.ts` tests rely on Node's built-in type stripping).
 ```bash
 node .github/scripts/check-syntax.mjs
 node .github/scripts/validate-manifest.mjs
-node --test
+node --test --experimental-test-coverage
 node tools/cra-import/build.mjs && git diff --exit-code -- tools/cra-import/dist
 ```
 
@@ -46,6 +46,11 @@ the generated bundles, not behaviour: nothing here can verify the extension
 against VSA or the scripts against Excel, so test by hand and say what you
 exercised in the pull request. Edit `tools/cra-import/logic.ts` or the glue,
 never `dist/`, then rebuild.
+
+The coverage table printed locally only lists files that a test loads. In CI,
+the job summary lists every source file, marks the untested ones as not
+measured, and `lcov.info` is uploaded as the `coverage` artifact. Coverage does
+not fail the build.
 
 ## Releasing
 
