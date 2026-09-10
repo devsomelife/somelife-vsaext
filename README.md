@@ -17,7 +17,8 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 ## Sharing
 
 Share the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke) link: it installs in one click and
-keeps everyone up to date.
+keeps everyone up to date. Edge users use the same link, see
+[Microsoft Edge](#microsoft-edge).
 
 For a build that is not on the store yet, released versions are on the Releases page, with the zip attached. CI also
 attaches an archive to every run: open the Actions tab, pick a run and download
@@ -41,11 +42,25 @@ automatically.
 Then open the extension's options page and set your VSA timesheet URL. The
 `Open` button next to it opens that page in a new tab.
 
+### Microsoft Edge
+
+Edge installs the same Chrome Web Store version:
+
+1. Open `edge://extensions` and turn on **Allow extensions from other stores**
+2. Open the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke?hl=en-US) and click "Add to Chrome". Updates keep
+   coming from the Chrome Web Store
+3. Edge warns that it has not verified extensions from other stores. That is
+   expected
+
+On a company-managed Edge, IT can lock that setting. Either ask them to allow
+the extension ID `ljojgaimkhhjakiibaohlmnhdgjhnhke`, or use the unpacked build
+below.
+
 ### Unpacked Build
 
 For development or a build that is not on the store yet:
 
-1. Chrome -> `chrome://extensions`
+1. Chrome -> `chrome://extensions`, Edge -> `edge://extensions`
 2. Enable Developer mode
 3. "Load unpacked" -> pick this directory
 4. Set your VSA timesheet URL on the options page, as above
