@@ -76,6 +76,21 @@ test('resolveProject: duplicate number is reported', () => {
   assert.match(r.error, /BS-99-000086 présent 2 fois/);
 });
 
+test('resolveProject: a duplicated number is settled by the project name found in the VSA label', () => {
+  const sprints = ref.concat([
+    { client: 'Cap Horizon', numero: 'BS-99-000200', projet: 'Lot 2 - Assistance technique', libelle: 'Cap Horizon - BS-99-000200 - Lot 2 - Assistance technique' },
+    { client: 'Cap Horizon', numero: 'BS-99-000200', projet: 'Lot 3', libelle: 'Cap Horizon - BS-99-000200 - Lot 3' },
+  ]);
+  const lot2 = resolveProject({ date: '', client: 'CAP HORIZON', project: 'BS-99-000200 [LOT 2 - Assistance Technique] : Cap Horizon', days: 1, task: '' }, sprints);
+  assert.equal(lot2.libelle, 'Cap Horizon - BS-99-000200 - Lot 2 - Assistance technique');
+  const lot1 = resolveProject({ date: '', client: 'CAP HORIZON', project: 'BS-99-000200 [Lot 1] : Cap Horizon', days: 1, task: '' }, sprints);
+  assert.equal(lot1.libelle, 'Cap Horizon - BS-99-000200 - Lot 1');
+  const none = resolveProject({ date: '', client: 'CAP HORIZON', project: 'BS-99-000200 [Lot 9] : Cap Horizon', days: 1, task: '' }, sprints);
+  assert.equal(none.libelle, '');
+  assert.match(none.error, /BS-99-000200 présent 3 fois/);
+  assert.match(none.error, /Lot 1, Lot 2 - Assistance technique, Lot 3/);
+});
+
 test('resolveProject: falls back to the client when it has exactly one compatible project', () => {
   const r = resolveProject({ date: '', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 1, task: '' }, ref);
   assert.equal(r.libelle, 'Atlas Logistique');

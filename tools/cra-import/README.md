@@ -12,7 +12,8 @@ Trois règles :
 
 - **Marqueur.** Les lignes écrites par le script portent `VSA Ext` dans une colonne **Source**, ajoutée en fin de tableau. Renvoyer le même mois remplace ces lignes-là et ne touche jamais aux lignes tapées à la main.
 - **Tout ou rien.** Un projet inconnu du référentiel, une date hors du mois, des heures non entières : l'import est refusé en bloc, rien n'est écrit, I24 liste les problèmes, le bloc reste en I23. On complète l'onglet Admin, on reclique.
-- **Rapprochement des projets.** Le numéro `BS-xx-xxxxxx` du libellé VSA est cherché dans la colonne **Numéro** du référentiel. À défaut, le client (sans casse ni accents) doit n'avoir qu'un seul projet actif compatible. Sinon le message dit quoi ajouter dans Admin.
+- **Rapprochement des projets.** Le numéro `BS-xx-xxxxxx` du libellé VSA est cherché dans la colonne **Numéro** du référentiel. Si plusieurs lignes portent ce numéro (un sprint par ligne, par exemple), celle dont le **Projet** figure dans le libellé VSA l'emporte. À défaut de numéro, le client (sans casse ni accents) doit n'avoir qu'un seul projet actif compatible. Sinon le message dit quoi ajouter dans Admin.
+- **Alimenter le référentiel.** Dans l'extension, `Copy projects for Admin` copie les projets du mois en lignes `Client · Numéro · Projet · Facturable · Oui` à coller dans la première ligne vide de `T_Projets` (le Libellé se calcule).
 
 Les heures sont recalculées côté classeur avec `HeuresParJour` (onglet Admin) : `0,125` jour = 1 h.
 

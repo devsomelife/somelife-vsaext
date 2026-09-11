@@ -107,6 +107,10 @@ and writes the rows, all or nothing. Rows it wrote earlier for the same month
 (column `Source` = `VSA Ext`) are replaced; rows typed by hand are left alone.
 The note becomes the workbook's `Tâche` column, so it is no longer private once
 you send a month.
+The workbook refuses a project its Admin referential does not know. `Copy
+projects for Admin` copies the month's projects as rows (client, BS number,
+project name, `Facturable`, `Oui`) that paste straight into that referential:
+send them to whoever keeps it before your first block of the month.
 With `Send notes to VSA as day comments` ticked (off by default), injection also
 writes each note as that day's comment in VSA.
 

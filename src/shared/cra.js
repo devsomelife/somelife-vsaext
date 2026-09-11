@@ -79,3 +79,54 @@ function escapeChar(c) {
 export function serializeCraPayload(payload) {
   return JSON.stringify(payload).replace(LINE_SEPARATORS, escapeChar);
 }
+
+// ---- Rows for the workbook's Admin referential --------------------------------
+//
+// The workbook only accepts projects listed in its Admin table (Client, Numéro,
+// Projet). Rather than discovering a missing one at import time, the user copies
+// the projects of the month as ready-to-paste rows and hands them to whoever
+// keeps the referential.
+
+const BS_CODE_RE = /\bBS-\d{2}-\d{6}\b/i;
+const TAB = String.fromCharCode(9);
+const NEWLINE = String.fromCharCode(10);
+const WHITESPACE_RE = /\s+/g;
+
+// A VSA label reads `BS-26-000079 [activity line] : Project name`. The project
+// name is what follows the last " : ". A label without it keeps what remains
+// once the number is removed, unbracketed when only a bracket is left.
+export function projectNameOf(label) {
+  const s = String(label || '').trim();
+  const colon = s.lastIndexOf(' : ');
+  if (colon >= 0) return s.slice(colon + 3).trim();
+  const rest = s.replace(BS_CODE_RE, '').trim();
+  const bracket = /^\[(.*)\]$/.exec(rest);
+  return (bracket ? bracket[1] : rest).replace(WHITESPACE_RE, ' ').trim();
+}
+
+export function buildAdminRows(entries, { month }) {
+  const inMonth = entriesForMonth(entries, month);
+  const complete = inMonth.filter(isComplete);
+  const seen = new Map();
+  for (const e of complete) {
+    const m = BS_CODE_RE.exec(e.project || '');
+    const row = {
+      client: (e.client || '').trim(),
+      numero: m ? m[0].toUpperCase() : '',
+      projet: projectNameOf(e.project),
+    };
+    seen.set(`${row.client}|${row.numero}|${row.projet}`, row);
+  }
+  const rows = [...seen.values()].sort((a, b) =>
+    a.client.localeCompare(b.client) || a.numero.localeCompare(b.numero) || a.projet.localeCompare(b.projet)
+  );
+  return { rows, skipped: inMonth.length - complete.length };
+}
+
+// One tab-separated line per row, in the Admin table's column order:
+// Client | Numéro | Projet | Type | Actif. Tabs and line breaks inside a value
+// would shift the paste, so they become spaces.
+export function serializeAdminRows(rows, { type = 'Facturable' } = {}) {
+  const clean = (s) => String(s || '').replace(WHITESPACE_RE, ' ').trim();
+  return rows.map((r) => [clean(r.client), clean(r.numero), clean(r.projet), type, 'Oui'].join(TAB)).join(NEWLINE);
+}
