@@ -1,6 +1,6 @@
 # Privacy Policy
 
-VSA Ext is a Chrome extension that helps you fill in your own VSA timesheet. It does not collect, send or sell any data.
+VSA Ext is a browser extension for Chrome, Edge and Firefox that helps you fill in your own VSA timesheet. It does not collect, send or sell any data.
 
 ## Data Read
 
@@ -11,7 +11,7 @@ The extension only runs on the VSA address you enter yourself.
 
 ## Data Stored
 
-Stored only in your browser, on this computer (`chrome.storage.local`):
+Stored only in your browser, on this computer, in its extension storage (`storage.local`), never synced to a browser account:
 
 - The time entries and notes you type.
 - The client and project list read from VSA.
@@ -39,4 +39,4 @@ Stored only in your browser, on this computer (`chrome.storage.local`):
 
 https://github.com/devsomelife/somelife-vsaext/issues
 
-Last updated: 2026-09-10. Version française : [politique-de-confidentialite.md](politique-de-confidentialite.md)
+Last updated: 2026-09-11. Version française : [politique-de-confidentialite.md](politique-de-confidentialite.md)
