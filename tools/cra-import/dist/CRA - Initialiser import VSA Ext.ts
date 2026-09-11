@@ -36,6 +36,10 @@ function main(workbook: ExcelScript.Workbook) {
     status.getFormat().getFont().setSize(9);
     status.getFormat().setWrapText(false);
 
+    // Room for the button placed by hand on this row, so it does not cover I23.
+    const buttonRow = sheet.getRange(BUTTON_ROW).getFormat();
+    if (buttonRow.getRowHeight() < BUTTON_ROW_HEIGHT) buttonRow.setRowHeight(BUTTON_ROW_HEIGHT);
+
     lines.push(`${sheet.getName()} : ${note}`);
   }
   console.log(lines.length ? lines.join("\n") : "Aucun onglet de saisie trouvé.");
@@ -58,6 +62,13 @@ const PASTE_PROMPT = "← Coller ici le bloc VSA Ext";
 const REF_TABLE = "T_Projets";
 const HOURS_NAME = "HeuresParJour";
 const DEFAULT_HOURS_PER_DAY = 8;
+// Fixed on purpose: copying the existing rows' format came back from Excel as
+// "m/d/yyyy" and displayed month-first in the French workbook (recette R5).
+const DATE_FORMAT = "dd/mm/yyyy";
+// The import button is anchored on row 22; a script button is taller than the
+// default 15 pt row and would overlap the paste cell below (recette R3).
+const BUTTON_ROW = "22:22";
+const BUTTON_ROW_HEIGHT = 30;
 
 type CellValue = string | number | boolean;
 

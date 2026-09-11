@@ -72,7 +72,7 @@ function main(workbook: ExcelScript.Workbook) {
   let body = table.getRangeBetweenHeaderAndTotal();
   const values = body.getValues();
   const placement = planPlacement(values, col, payload.month, plan.rows.length);
-  const dateFormat = findDateFormat(body, values, col.date);
+  const dateFormat = DATE_FORMAT;
   const formulas = calcFormulas(table.getName());
 
   placement.reuse.forEach((rowIndex, k) => writeRow(body.getRow(rowIndex), plan.rows[k], col, dateFormat, formulas));
@@ -97,14 +97,6 @@ function readHoursPerDay(workbook: ExcelScript.Workbook): number {
   const item = workbook.getNamedItem(HOURS_NAME);
   const v = item ? Number(item.getRange().getValue()) : NaN;
   return v > 0 ? v : DEFAULT_HOURS_PER_DAY;
-}
-
-// Existing rows decide how dates look, so imported ones match them.
-function findDateFormat(body: ExcelScript.Range, values: CellValue[][], dateCol: number): string {
-  for (let i = 0; i < values.length; i++) {
-    if (typeof values[i][dateCol] === "number") return body.getCell(i, dateCol).getNumberFormat();
-  }
-  return "dd/mm/yyyy";
 }
 
 // Text columns are typed as text first so a task starting with "=" stays text.
@@ -149,6 +141,13 @@ const PASTE_PROMPT = "← Coller ici le bloc VSA Ext";
 const REF_TABLE = "T_Projets";
 const HOURS_NAME = "HeuresParJour";
 const DEFAULT_HOURS_PER_DAY = 8;
+// Fixed on purpose: copying the existing rows' format came back from Excel as
+// "m/d/yyyy" and displayed month-first in the French workbook (recette R5).
+const DATE_FORMAT = "dd/mm/yyyy";
+// The import button is anchored on row 22; a script button is taller than the
+// default 15 pt row and would overlap the paste cell below (recette R3).
+const BUTTON_ROW = "22:22";
+const BUTTON_ROW_HEIGHT = 30;
 
 type CellValue = string | number | boolean;
 

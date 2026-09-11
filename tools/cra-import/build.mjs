@@ -35,12 +35,21 @@ for (const s of SCRIPTS) {
     `${glue.trimEnd()}\n\n` +
     `// ---- Shared logic, generated from logic.ts by build.mjs: edit there, not here ----\n\n` +
     `${logic.trimEnd()}\n`;
+  // Envelope copied field for field from a .osts that Excel for the web wrote
+  // itself (recette of 2026-09-10), so the file loads like a native script.
   const osts = {
     version: '0.3.0',
     body,
     description: s.description,
-    parameterInfo: JSON.stringify({ parameterSchema: { type: 'object', properties: {} }, returnSchema: {} }),
-    apiInfo: JSON.stringify({ apiName: 'ExcelApi', apiVersion: '1.1' }),
+    noCodeMetadata: '',
+    parameterInfo: JSON.stringify({
+      version: 1,
+      originalParameterOrder: [],
+      parameterSchema: { type: 'object', default: {}, 'x-ms-visibility': 'internal' },
+      returnSchema: { type: 'object', properties: {} },
+      signature: { comment: '', parameters: [{ name: 'workbook', comment: '' }] },
+    }),
+    apiInfo: JSON.stringify({ variant: 'synchronous', variantVersion: 2 }),
   };
   writeFileSync(join(here, 'dist', `${s.name}.osts`), JSON.stringify(osts, null, 2) + '\n');
   writeFileSync(join(here, 'dist', `${s.name}.ts`), body);

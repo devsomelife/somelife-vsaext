@@ -36,6 +36,10 @@ function main(workbook: ExcelScript.Workbook) {
     status.getFormat().getFont().setSize(9);
     status.getFormat().setWrapText(false);
 
+    // Room for the button placed by hand on this row, so it does not cover I23.
+    const buttonRow = sheet.getRange(BUTTON_ROW).getFormat();
+    if (buttonRow.getRowHeight() < BUTTON_ROW_HEIGHT) buttonRow.setRowHeight(BUTTON_ROW_HEIGHT);
+
     lines.push(`${sheet.getName()} : ${note}`);
   }
   console.log(lines.length ? lines.join("\n") : "Aucun onglet de saisie trouvé.");
