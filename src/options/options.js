@@ -32,6 +32,11 @@ let entries = [];
 let catalog = [];
 // True once a timesheet URL is set and its host permission is granted.
 let configured = false;
+// The CRA tab name, kept in memory so the copy handler can write the clipboard
+// without awaiting storage first. An await before the write can spend the
+// click's user activation, which clipboard access requires (strictly so in
+// Firefox).
+let craSheetName = '';
 
 const todayMonth = new Date().toISOString().slice(0, 7);
 
@@ -322,7 +327,7 @@ $('export-csv').addEventListener('click', async () => {
 // workbook would refuse it anyway, and later, with less context.
 $('copy-cra').addEventListener('click', async () => {
   const month = currentMonth();
-  const person = await getCraSheetName();
+  const person = craSheetName;
   const { payload, problems, hours, skipped } = buildCraPayload(entries, { month, person });
   if (problems.length) {
     return say(`Cannot copy: ${problems.join('; ')}. Days must be multiples of 0.125.`, true);
@@ -370,7 +375,8 @@ for (const id of ['open-timesheet', 'cra-open']) {
 }
 
 $('cra-sheet').addEventListener('change', async () => {
-  await setCraSheetName($('cra-sheet').value);
+  craSheetName = $('cra-sheet').value.trim();
+  await setCraSheetName(craSheetName);
   setUrlStatus('CRA tab name saved.', false);
 });
 
@@ -541,7 +547,8 @@ async function refreshSetup() {
   // CRA preferences are independent of the VSA site, so they load before the
   // early return below. Both the field and the Open button are restored: a field
   // left empty invites retyping, and a typo would silently replace a good value.
-  $('cra-sheet').value = await getCraSheetName();
+  craSheetName = await getCraSheetName();
+  $('cra-sheet').value = craSheetName;
   const craUrl = await getCraUrl();
   $('cra-url').value = craUrl;
   setOpenButton('cra-open', craUrl);
