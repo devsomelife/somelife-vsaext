@@ -4,6 +4,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 
+const SELECTORS = fileURLToPath(new URL('../src/content/selectors.js', import.meta.url));
+const INJECT = fileURLToPath(new URL('../src/content/inject.js', import.meta.url));
+
 // selectors.js and inject.js are classic content scripts that register globals,
 // so they run in a VM context against a fake DOM rather than being imported.
 // vm keeps each file name, which is what lets code coverage attribute the lines
@@ -11,8 +14,7 @@ import vm from 'node:vm';
 function load(document) {
   class FocusEvent extends Event {}
   const ctx = vm.createContext({ document, Event, FocusEvent, setTimeout, clearTimeout });
-  for (const rel of ['../src/content/selectors.js', '../src/content/inject.js']) {
-    const file = fileURLToPath(new URL(rel, import.meta.url));
+  for (const file of [SELECTORS, INJECT]) {
     vm.runInContext(readFileSync(file, 'utf8'), ctx, { filename: file });
   }
   return ctx.VsaInject;
@@ -22,15 +24,45 @@ function load(document) {
 // plain arrays before a strict deep comparison.
 const entries = (map) => Array.from(map, ([key, value]) => [key, value]);
 
+// Dispatching an event records its type and runs the matching on<type>
+// property, the way a browser runs an inline attribute handler for it.
+function fakeElement(id, props = {}) {
+  return {
+    id,
+    value: '',
+    style: {},
+    options: [],
+    events: [],
+    onchange: null,
+    dispatchEvent(ev) {
+      this.events.push(ev.type);
+      const handler = this[`on${ev.type}`];
+      if (typeof handler === 'function') handler.call(this, ev);
+      return true;
+    },
+    ...props,
+  };
+}
+
 // Elements are created on first lookup, so the test can inspect what was touched.
+// Selector lookups only answer for selectors the test registered.
 function fakeDom() {
   const els = new Map();
+  const selectors = new Map();
   const getElementById = (id) => {
-    if (!els.has(id)) els.set(id, { id, value: '', style: {}, onchange: null, dispatchEvent() {} });
+    if (!els.has(id)) els.set(id, fakeElement(id));
     return els.get(id);
   };
-  return { els, document: { getElementById, querySelector: () => null, querySelectorAll: () => [] } };
+  const document = {
+    getElementById,
+    querySelector: (sel) => selectors.get(sel) ?? null,
+    querySelectorAll: (sel) => (selectors.has(sel) ? [selectors.get(sel)] : []),
+  };
+  return { els, selectors, document };
 }
+
+const option = (value, text = value) => ({ value, text, disabled: false, parentElement: null });
+const ACTIVITY_SELECT = 'select.selectTimesheetLine[id^="tiers_"]';
 
 test('commentsByDay keeps only days that have a note, trimmed', () => {
   const { commentsByDay } = load(fakeDom().document);
@@ -52,7 +84,7 @@ test('commentsByDay joins distinct notes of the same day and drops repeats', () 
   assert.deepEqual(entries(byDay), [[4, 'Cadrage ; Recette']]);
 });
 
-test('writeComment runs the VSA handler, then closes the popup it toggled open', () => {
+test('writeComment runs the VSA handler through one change event, then closes the popup it toggled open', () => {
   const { els, document } = fakeDom();
   const { writeComment } = load(document);
   let calls = 0;
@@ -62,6 +94,7 @@ test('writeComment runs the VSA handler, then closes the popup it toggled open',
   };
   writeComment('r1', 2, 'Recette');
   assert.equal(calls, 1);
+  assert.deepEqual(els.get('comment_2_r1').events, ['change']);
   assert.equal(els.get('comment_2_r1').value, 'Recette');
   assert.equal(els.get('div_comment_2_r1').style.display, 'none');
 });
@@ -89,4 +122,58 @@ test('writeTimes writes day comments only when sendNotes is set', () => {
       assert.equal(els.has('comment_3_r1'), false, 'no comment field is touched');
     }
   }
+});
+
+test('fetchCatalog restores the original activity through a change event', async () => {
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [option('I-INTERNE', 'Liste des activités')];
+  selectors.set(ACTIVITY_SELECT, act);
+
+  const catalog = await fetchCatalog();
+
+  assert.equal(catalog.length, 0);
+  assert.equal(act.value, 'I-INTERNE');
+  assert.deepEqual(act.events, ['change']);
+});
+
+test('prepareLines selects client and project through change events', async () => {
+  const { selectors, document } = fakeDom();
+  const { prepareLines } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [option('I-INTERNE', 'Liste des activités'), option('C-1', 'NORTHWIND TRADING')];
+  const project = fakeElement('project_r1', { options: [option('none', 'Choose a mission / project')] });
+  selectors.set(ACTIVITY_SELECT, act);
+  selectors.set('select.select_order[name="line[r1][order_id]"]', project);
+
+  // VSA's activity handler reloads the project list for the chosen client.
+  let activityCalls = 0;
+  let projectCalls = 0;
+  act.onchange = () => {
+    activityCalls++;
+    project.options = [option('none', 'Choose a mission / project'), option('98001|ATE', 'BS-99-000112 [Lot 1]')];
+  };
+  project.onchange = () => {
+    projectCalls++;
+  };
+
+  const [line] = await prepareLines([
+    { date: '2026-09-03', client: 'NORTHWIND TRADING', project: 'BS-99-000112 [Lot 1]', projectCode: '98001|ATE', days: 1 },
+  ]);
+
+  assert.equal(line.ok, true, line.error);
+  assert.equal(act.value, 'C-1');
+  assert.equal(project.value, '98001|ATE');
+  assert.equal(activityCalls, 1, 'getBdc runs once per client change');
+  assert.equal(projectCalls, 1);
+  assert.deepEqual(act.events, ['change']);
+  assert.deepEqual(project.events, ['change']);
+});
+
+test('inject.js never calls page handlers directly', () => {
+  const src = readFileSync(INJECT, 'utf8');
+  assert.doesNotMatch(src, /\.on(change|click|input|blur)\s*\(/);
 });

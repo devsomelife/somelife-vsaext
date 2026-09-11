@@ -1,10 +1,12 @@
 // Goal 2: write preloaded entries into the VSA grid, and read back the
 // client/project catalog so the options page can offer real choices.
 //
-// Both go through the page's own machinery rather than the network:
-// setting select.value and firing the inline onchange is exactly what a manual
-// click does, so VSA's internal state stays consistent and Save works normally.
-// Nothing is submitted; the user still presses Save.
+// Both go through the page's own machinery rather than the network: setting a
+// field's value and dispatching the event a manual edit fires runs VSA's own
+// handlers, so its internal state stays consistent and Save works normally.
+// Handlers are never called directly: a Firefox content script cannot rely on
+// reading a page's inline handler, while a dispatched event reaches it in every
+// browser. Nothing is submitted; the user still presses Save.
 
 const SETTLE_MS = 400;
 // Lines in HOUR format take hours, so fractions of a day are converted. At 8,
@@ -73,9 +75,8 @@ function fire(el, type) {
   el.dispatchEvent(new Event(type, { bubbles: true }));
 }
 
-// Selecting an activity triggers the inline onchange (getBdc) that fetches the
-// projects for that client. Calling the handler directly is more reliable than
-// a synthetic event, since VSA binds it as an attribute.
+// Selecting an activity runs VSA's inline change handler (getBdc), which fetches
+// the projects for that client.
 async function chooseActivity(row, label) {
   const act = document.getElementById(`tiers_${row}`);
   if (!act) throw new Error(`row ${row}: activity select missing`);
@@ -86,8 +87,7 @@ async function chooseActivity(row, label) {
     // Captured before the change, so it describes the list being replaced.
     const before = projectsFingerprint(row);
     act.value = opt.value;
-    if (typeof act.onchange === 'function') act.onchange();
-    else fire(act, 'change');
+    fire(act, 'change');
     const sel = await waitForProjects(row, before);
     if (!sel) throw new Error(`no projects loaded for "${label}"`);
   }
@@ -110,8 +110,7 @@ async function chooseProject(row, projectLabel, projectCode) {
     opts.find((o) => o.text.trim().startsWith(String(projectLabel).trim()));
   if (!opt) throw new Error(`unknown project "${projectLabel}"`);
   sel.value = opt.value;
-  if (typeof sel.onchange === 'function') sel.onchange();
-  else fire(sel, 'change');
+  fire(sel, 'change');
   await sleep(SETTLE_MS);
   return sel;
 }
@@ -133,15 +132,14 @@ function writeDay(row, dayNumber, days) {
   return { field: id, wrote: input.value, unit: asHours ? 'hour' : 'day' };
 }
 
-// Writes one day comment. VSA's own handler is called so the icon and the
-// page's modified flag update as if typed by hand. That handler also toggles
+// Writes one day comment. The change event runs VSA's own handler, so the icon
+// and the page's modified flag update as if typed by hand. That handler toggles
 // the comment popup, which would leave it open, so it is closed afterwards.
 function writeComment(row, dayNumber, text) {
   const input = document.getElementById(VSA.commentInputId(row, dayNumber));
   if (!input) throw new Error(`row ${row}: no comment field for day ${dayNumber}`);
   input.value = text;
-  if (typeof input.onchange === 'function') input.onchange();
-  else fire(input, 'change');
+  fire(input, 'change');
   const popup = document.getElementById(VSA.commentPopupId(row, dayNumber));
   if (popup) popup.style.display = 'none';
 }
@@ -324,8 +322,7 @@ async function fetchCatalog(onProgress, onPartial) {
     try {
       const before = projectsFingerprint(row);
       act.value = c.code;
-      if (typeof act.onchange === 'function') act.onchange();
-      else fire(act, 'change');
+      fire(act, 'change');
       const sel = await waitForProjects(row, before);
       catalog.push({
         ...c,
@@ -341,7 +338,7 @@ async function fetchCatalog(onProgress, onPartial) {
   }
 
   act.value = original;
-  if (typeof act.onchange === 'function') act.onchange();
+  fire(act, 'change');
   return sortCatalog(catalog);
 }
 
