@@ -12,6 +12,10 @@ on:
 permissions:
   contents: write
 
+# Same pin as CI, so a release lints with the linter that passed on develop.
+env:
+  WEB_EXT: web-ext@10.6.0
+
 jobs:
   release:
     name: Publish release
@@ -30,11 +34,18 @@ jobs:
       - name: Set the version in manifest.json
         run: node .github/scripts/set-version.mjs "${{ inputs.version }}"
 
-      # The release must not ship something that fails the normal checks.
+      # The release must not ship something that fails the normal checks, for
+      # either browser. This runs before the tag guard and the commit, so a
+      # failing package or Firefox lint never creates a tag.
       - name: Validate
         run: |
           node .github/scripts/check-syntax.mjs
+          node .github/scripts/build-extension.mjs all --zip
+          version=$(node -p "require('./manifest.json').version")
           node .github/scripts/validate-manifest.mjs
+          node .github/scripts/validate-manifest.mjs --target chrome --zip "vsa-ext-${version}.zip"
+          node .github/scripts/validate-manifest.mjs --target firefox --zip "vsa-ext-firefox-${version}.zip"
+          npx --yes "$WEB_EXT" lint --source-dir build/firefox --no-config-discovery
 
       - name: Read the resulting version
         id: v
@@ -48,12 +59,6 @@ jobs:
             echo "::error::$tag already exists. Pick a different version."
             exit 1
           fi
-
-      - name: Build the archive
-        run: zip -r -q "vsa-ext-${{ steps.v.outputs.version }}.zip" manifest.json src icons docs/guide.html
-
-      - name: Verify the archive is loadable
-        run: node .github/scripts/validate-manifest.mjs --zip "vsa-ext-${{ steps.v.outputs.version }}.zip"
 
       - name: Commit and tag
         run: |
@@ -71,5 +76,18 @@ jobs:
         run: |
           gh release create "v${{ steps.v.outputs.version }}" \
             "vsa-ext-${{ steps.v.outputs.version }}.zip" \
+            "vsa-ext-firefox-${{ steps.v.outputs.version }}.zip" \
             --title "v${{ steps.v.outputs.version }}" \
             --generate-notes
+
+      # Both stores take a manual upload for now.
+      - name: Store upload reminder
+        run: |
+          {
+            echo "## Store Uploads"
+            echo ""
+            echo "Both packages are attached to release v${{ steps.v.outputs.version }}. Upload them by hand:"
+            echo ""
+            echo "- Chrome Web Store: \`vsa-ext-${{ steps.v.outputs.version }}.zip\`"
+            echo "- addons.mozilla.org, Firefox desktop: \`vsa-ext-firefox-${{ steps.v.outputs.version }}.zip\` (no source code upload needed)"
+          } >> "$GITHUB_STEP_SUMMARY"

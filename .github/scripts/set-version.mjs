@@ -1,6 +1,6 @@
 // Sets the extension version in manifest.json.
 //
-// Chrome requires one to four dot-separated integers, each 0-65535, with no
+// Chrome and Firefox require one to four dot-separated integers, each 0-65535, with no
 // leading zeros. Anything else is rejected at load time, so it is validated
 // here rather than discovered by whoever installs the release.
 //
@@ -23,7 +23,7 @@ const valid =
 
 if (!valid) {
   console.error(
-    `invalid version "${version}": Chrome requires 1-4 dot-separated integers, ` +
+    `invalid version "${version}": Chrome and Firefox require 1-4 dot-separated integers, ` +
       'each 0-65535 with no leading zeros (e.g. 0.2.0)'
   );
   process.exit(1);
