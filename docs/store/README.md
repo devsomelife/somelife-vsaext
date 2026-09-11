@@ -1,6 +1,7 @@
-# Chrome Web Store assets
+# Store Assets
 
-Screenshots are 1280x800, the size the store expects.
+Screenshots for the Chrome Web Store and addons.mozilla.org listings, at
+1280x800.
 
 | File | Shows |
 | --- | --- |
@@ -17,4 +18,4 @@ Regenerate with:
 python3 docs/store/render-screenshots.py
 ```
 
-The store icon is `icons/icon128.png`.
+Both stores use `icons/icon128.png` as the icon.

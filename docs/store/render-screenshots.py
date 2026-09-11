@@ -1,4 +1,4 @@
-"""Renders Chrome Web Store screenshots at exactly 1280x800.
+"""Renders the store screenshots (Chrome Web Store, addons.mozilla.org) at 1280x800.
 
 Uses fictional client and project names: a public listing must not carry real
 customer data."""

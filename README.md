@@ -1,11 +1,13 @@
 # VSA Ext
 
-Chrome extension for the VSA timesheet pivot page.
+Browser extension (Chrome, Edge, Firefox) for the VSA timesheet pivot page.
 
-Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke).
+Install it from the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke) for Chrome and Edge.
+The Firefox version is awaiting review on addons.mozilla.org, see
+[Firefox](#firefox).
 
 The timesheet URL is configured in the extension, not hardcoded: set it on the
-options page on first run and grant access to that site when Chrome asks. The
+options page on first run and grant access to that site when the browser asks. The
 content script is then registered for that address.
 
 User documentation (French): [docs/guide.html](docs/guide.html).
@@ -18,17 +20,19 @@ Contributing: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Share the [Chrome Web Store](https://chromewebstore.google.com/detail/vsa-ext/ljojgaimkhhjakiibaohlmnhdgjhnhke) link: it installs in one click and
 keeps everyone up to date. Edge users use the same link, see
-[Microsoft Edge](#microsoft-edge).
+[Microsoft Edge](#microsoft-edge). Firefox users use the addons.mozilla.org
+listing once it is approved, see [Firefox](#firefox).
 
-For a build that is not on the store yet, released versions are on the Releases page, with the zip attached. CI also
-attaches an archive to every run: open the Actions tab, pick a run and download
-the `extension` artifact. To build one locally:
+For a build that is not on a store yet, released versions are on the Releases
+page with both packages attached: `vsa-ext-<version>.zip` for Chrome and Edge,
+`vsa-ext-firefox-<version>.zip` for Firefox. CI also attaches them to every run
+as the `extension` and `extension-firefox` artifacts. To build them locally:
 
 ```bash
-zip -r vsa-ext.zip manifest.json src icons docs/guide.html
+node .github/scripts/build-extension.mjs all --zip
 ```
 
-Send that zip; the recipient unzips it and loads the folder as below.
+Unzipped, each package loads as described below.
 
 Chrome cannot install a zip directly -- it must be unzipped first, and the
 folder has to stay put, since "Load unpacked" references it on disk rather than
@@ -55,6 +59,24 @@ Edge installs the same Chrome Web Store version:
 On a company-managed Edge, IT can lock that setting. Either ask them to allow
 the extension ID `ljojgaimkhhjakiibaohlmnhdgjhnhke`, or use the unpacked build
 below.
+
+### Firefox
+
+Requires Firefox 140 or later, on desktop. The listing on addons.mozilla.org is
+awaiting review; once it is live, click "Add to Firefox" there and updates
+install automatically.
+
+Until then, or to test a build:
+
+1. Build it: `node .github/scripts/build-extension.mjs firefox`
+2. Open `about:debugging#/runtime/this-firefox`
+3. **Load Temporary Add-on** -> pick `build/firefox/manifest.json`
+
+Firefox removes a temporary add-on, and its data, when it restarts.
+
+Firefox hides new toolbar buttons: pin VSA Ext from the puzzle icon to reach
+the options page. The extension does not run in private windows unless you
+allow it in its settings.
 
 ### Unpacked Build
 
@@ -148,15 +170,18 @@ Because merging never deletes, a client removed in VSA stays in the list.
 ### Stored data
 
 Both the tracked entries and the client/project catalog live in
-`chrome.storage.local`, so they survive page reloads, browser restarts and
+the extension storage (`storage.local`), so they survive page reloads, browser restarts and
 extension reloads. You only need to re-sync when the project list changes on
 VSA's side. Uninstalling the extension clears it -- use `Export JSON` for a
-backup. Storage is local to this machine and never syncs to a Google account.
+backup. Storage is local to this machine and never syncs to a browser account.
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
+| `manifest.json` | Chrome and Edge manifest, loadable from the repository root. |
+| `manifest.firefox.json` | Firefox differences only, merged over `manifest.json` by the build. |
+| `.github/scripts/build-extension.mjs` | Builds `build/chrome`, `build/firefox` and both zips from the same sources. |
 | `src/content/selectors.js` | All VSA DOM knowledge, documented. Fix markup changes here. |
 | `src/content/widen.js` | Select widening. |
 | `src/content/inject.js` | Grid writing and catalog sync. |
