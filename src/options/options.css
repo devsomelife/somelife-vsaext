@@ -27,6 +27,14 @@ td input { width: 100%; box-sizing: border-box; border: 0; background: transpare
 td input:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
 td.days, td.days input { text-align: right; }
 tfoot td { font-weight: 600; }
+
+/* Day groups: a header row above each day's entries with its total and status. */
+tr.day-group th { background: rgba(128,128,128,.10); border-top: 2px solid #999; font-size: 13px; }
+tr.day-group th span + span { margin-left: 18px; }
+tr.day-group .day-label { display: inline-block; min-width: 110px; }
+tr.day-group.complete .day-status { color: #2a7; }
+tr.day-group.partial .day-status { color: #c60; }
+tr.day-group.over .day-status { color: #c33; }
 .actions { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 button { font: inherit; padding: 6px 12px; cursor: pointer; }
 #status { min-height: 1.2em; color: #2a7; }

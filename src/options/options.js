@@ -21,6 +21,10 @@ import {
   totalDays,
   normalize,
   isComplete,
+  monthOf,
+  groupByDay,
+  dayStatus,
+  summarizeDays,
 } from '../shared/store.js';
 import { buildCraPayload, serializeCraPayload } from '../shared/cra.js';
 
@@ -160,6 +164,17 @@ function rowTemplate(e) {
     // and select keyboard navigation.
     el.addEventListener('input', apply);
     el.addEventListener('change', apply);
+
+    // A committed new date moves the row to another day group, so the table is
+    // rebuilt. An emptied date is left alone: rebuilding would hide the row
+    // while it is being corrected.
+    if (field === 'date') {
+      el.addEventListener('change', () => {
+        if (!el.value) return;
+        if (monthOf(el.value) !== currentMonth()) say(`Row moved to ${monthOf(el.value)}.`);
+        render();
+      });
+    }
   }
 
   tr.querySelector('[data-act="del"]').addEventListener('click', () => {
@@ -173,6 +188,9 @@ function rowTemplate(e) {
 function updateTotal() {
   const shown = entriesForMonth(entries, currentMonth());
   const complete = shown.filter(isComplete).length;
+  const days = groupByDay(shown);
+  $('total-label').textContent = describeMonth(summarizeDays(days));
+  refreshDayHeaders(days);
   $('total').textContent = String(totalDays(shown));
   $('row-count').textContent = shown.length
     ? `${complete}/${shown.length} row(s) ready to inject`
@@ -181,9 +199,75 @@ function updateTotal() {
   $('copy-cra').disabled = complete === 0;
 }
 
+const formatDays = (n) => String(Number(n.toFixed(3)));
+
+const DAY_STATUS_TEXT = {
+  complete: () => 'complete',
+  partial: (total) => `missing ${formatDays(1 - total)}`,
+  over: (total) => `over by ${formatDays(total - 1)}`,
+};
+
+function dayLabel(date) {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
+// Built with textContent rather than innerHTML: the header needs no markup.
+function dayHeaderRow(day) {
+  const tr = document.createElement('tr');
+  const th = document.createElement('th');
+  th.colSpan = 6;
+  th.scope = 'rowgroup';
+  for (const part of ['label', 'total', 'status']) {
+    const span = document.createElement('span');
+    span.className = `day-${part}`;
+    th.append(span);
+  }
+  tr.append(th);
+  fillDayHeader(tr, day);
+  return tr;
+}
+
+function fillDayHeader(tr, day) {
+  tr.className = `day-group ${day.status}`;
+  tr.dataset.date = day.date;
+  tr.querySelector('.day-label').textContent = dayLabel(day.date);
+  tr.querySelector('.day-total').textContent = `${formatDays(day.total)} / 1`;
+  tr.querySelector('.day-status').textContent = DAY_STATUS_TEXT[day.status](day.total);
+}
+
+// Totals change while typing without rebuilding the table, which would lose
+// focus, so the headers are refreshed in place. A day whose rows all lost their
+// date is still on screen until the next rebuild, and shows as empty.
+function refreshDayHeaders(days) {
+  const byDate = new Map(days.map((day) => [day.date, day]));
+  for (const tr of rowsEl.querySelectorAll('tr.day-group')) {
+    const date = tr.dataset.date;
+    fillDayHeader(tr, byDate.get(date) ?? { date, total: 0, status: dayStatus(0) });
+  }
+}
+
+function describeMonth({ complete, partial, over }) {
+  const parts = [];
+  if (complete) parts.push(`${complete} complete day${complete > 1 ? 's' : ''}`);
+  if (partial) parts.push(`${partial} partial`);
+  if (over) parts.push(`${over} over`);
+  return parts.length ? `Total: ${parts.join(', ')}` : 'Total';
+}
+
+// Entries are shown grouped by day, each group under a header row with the
+// day's total and whether it makes one full day.
 function render() {
   const shown = entriesForMonth(entries, currentMonth());
-  rowsEl.replaceChildren(...shown.map((e) => rowTemplate(e)));
+  const rows = [];
+  for (const day of groupByDay(shown)) {
+    rows.push(dayHeaderRow(day), ...day.entries.map((e) => rowTemplate(e)));
+  }
+  rowsEl.replaceChildren(...rows);
   updateTotal();
   updateButtons();
 }

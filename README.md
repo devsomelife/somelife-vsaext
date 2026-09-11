@@ -103,7 +103,9 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 - `Sync clients & projects from VSA` walks every client in the activity
   dropdown and records its project list, so the grid offers real values.
   Run it with the VSA timesheet page open.
-- Fill the month grid (`Add row`, or `Fill weekdays` to seed working days).
+- Fill the month grid with `Add row`. Entries are grouped under a header row
+  per day showing the day's total out of 1 and its status: complete, missing
+  some time, or over one day. The footer counts complete, partial and over days.
 - `Inject this month into VSA` writes the entries into the grid.
 
 Injection runs in two passes:
