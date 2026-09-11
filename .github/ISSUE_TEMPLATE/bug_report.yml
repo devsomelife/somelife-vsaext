@@ -47,11 +47,22 @@ body:
       label: Console errors
       description: >
         Errors from DevTools (F12) on the VSA page, and from the extension's own
-        console via chrome://extensions -> Errors.
+        console: chrome://extensions -> Errors in Chrome or Edge, or
+        about:debugging -> Inspect in Firefox.
       render: text
 
-  - type: input
-    id: chrome-version
+  - type: dropdown
+    id: browser
     attributes:
-      label: Chrome version
-      placeholder: "chrome://version"
+      label: Browser
+      options:
+        - Chrome
+        - Edge
+        - Firefox
+        - Other
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser version
+      placeholder: "chrome://version, edge://version or about:support"
