@@ -9,9 +9,15 @@ on:
 permissions:
   contents: read
 
-# The extension has no build step and no dependencies: Chrome loads the sources
-# as they are. These checks cover what actually breaks it, which is a syntax
-# error or a manifest pointing at a file that is not there.
+# web-ext is pinned and bumped on purpose: a newer addons-linter can start
+# flagging code that passed before.
+env:
+  WEB_EXT: web-ext@10.6.0
+
+# The extension has no dependencies: browsers load the sources as they are, and
+# the build script only copies them per browser and writes each manifest. These
+# checks cover what actually breaks it: a syntax error, a failing test, or a
+# manifest pointing at a file that is not there.
 jobs:
   validate:
     name: Validate extension
@@ -48,14 +54,32 @@ jobs:
           node tools/cra-import/build.mjs
           git diff --exit-code -- tools/cra-import/dist
 
-      - name: Build archive and validate the manifest inside it
+      - name: Build the Chrome and Firefox packages
+        id: build
         run: |
-          version=$(node -p "require('./manifest.json').version")
-          zip -r -q "vsa-ext-${version}.zip" manifest.json src icons docs/guide.html
-          node .github/scripts/validate-manifest.mjs --zip "vsa-ext-${version}.zip"
+          node .github/scripts/build-extension.mjs all --zip
+          echo "version=$(node -p "require('./manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Validate both manifests
+        run: |
+          node .github/scripts/validate-manifest.mjs
+          node .github/scripts/validate-manifest.mjs --target chrome --zip "vsa-ext-${{ steps.build.outputs.version }}.zip"
+          node .github/scripts/validate-manifest.mjs --target firefox --zip "vsa-ext-firefox-${{ steps.build.outputs.version }}.zip"
+
+      # addons-linter, the same checks addons.mozilla.org runs on upload. Errors
+      # fail the build; the expected warnings (innerHTML on escaped values in
+      # options.js, a Firefox for Android version note) do not.
+      - name: Lint the Firefox package with web-ext
+        run: npx --yes "$WEB_EXT" lint --source-dir build/firefox --no-config-discovery
 
       - uses: actions/upload-artifact@v4
         with:
           name: extension
-          path: vsa-ext-*.zip
+          path: vsa-ext-${{ steps.build.outputs.version }}.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-firefox
+          path: vsa-ext-firefox-${{ steps.build.outputs.version }}.zip
           if-no-files-found: error
