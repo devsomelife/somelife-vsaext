@@ -17,9 +17,21 @@ export const CONTENT_FILES = [
 
 const CSS_FILES = ['src/content/widen.css'];
 
+// Registrations run one at a time. Saving the URL both grants site access
+// (permissions.onAdded) and sends a sync-registration message; run concurrently,
+// the second registerContentScripts call would fail with a duplicate script id.
+let queue = Promise.resolve();
+
 // Re-registers the content script for the configured URL. Safe to call
-// repeatedly: any previous registration is replaced.
-export async function syncRegistration() {
+// repeatedly: any previous registration is replaced. A failed run does not
+// block the next one.
+export function syncRegistration() {
+  const run = queue.then(registerForConfiguredUrl, registerForConfiguredUrl);
+  queue = run.catch(() => {});
+  return run;
+}
+
+async function registerForConfiguredUrl() {
   const existing = await chrome.scripting.getRegisteredContentScripts({ ids: [SCRIPT_ID] });
   if (existing.length) {
     await chrome.scripting.unregisterContentScripts({ ids: [SCRIPT_ID] });
@@ -49,6 +61,11 @@ export async function syncRegistration() {
 
 chrome.runtime.onInstalled.addListener(() => syncRegistration());
 chrome.runtime.onStartup.addListener(() => syncRegistration());
+
+// Site access can also be granted or revoked outside the options page, from the
+// browser's own extension menu; Firefox lets users do this at any time.
+chrome.permissions.onAdded.addListener(() => syncRegistration());
+chrome.permissions.onRemoved.addListener(() => syncRegistration());
 
 // The options page asks for a re-registration after the URL or permission
 // changes.
