@@ -26,7 +26,7 @@ import {
   dayStatus,
   summarizeDays,
 } from '../shared/store.js';
-import { buildCraPayload, serializeCraPayload } from '../shared/cra.js';
+import { buildCraPayload, serializeCraPayload, buildAdminRows, serializeAdminRows } from '../shared/cra.js';
 
 const $ = (id) => document.getElementById(id);
 const rowsEl = $('rows');
@@ -197,6 +197,7 @@ function updateTotal() {
     : '';
   // The CRA block needs no VSA configuration, only something complete to send.
   $('copy-cra').disabled = complete === 0;
+  $('copy-admin').disabled = complete === 0;
 }
 
 const formatDays = (n) => String(Number(n.toFixed(3)));
@@ -438,6 +439,34 @@ $('copy-cra').addEventListener('click', async () => {
       'Clipboard access failed: the block is shown below. Copy it by hand (Ctrl+C), then paste it in cell I23 of your CRA tab.',
       true
     );
+  }
+});
+
+// The workbook refuses a project its Admin referential does not know. This hands
+// the month's projects to whoever keeps that referential, as rows that paste
+// straight into the Admin table (Client, Numéro, Projet, Type, Actif).
+$('copy-admin').addEventListener('click', async () => {
+  const month = currentMonth();
+  const { rows, skipped } = buildAdminRows(entries, { month });
+  if (!rows.length) {
+    return say('Nothing to copy: each row needs a project and days.', true);
+  }
+  const text = serializeAdminRows(rows);
+  const fallback = $('cra-fallback');
+  try {
+    await navigator.clipboard.writeText(text);
+    fallback.hidden = true;
+    say(
+      `Copied ${rows.length} project(s) for ${month}` +
+        (skipped ? `, ${skipped} incomplete row(s) skipped` : '') +
+        '. Send them to the CRA workbook owner, or paste them in the first empty row of the projects table on the Admin tab.'
+    );
+  } catch {
+    fallback.value = text;
+    fallback.hidden = false;
+    fallback.focus();
+    fallback.select();
+    say('Clipboard access failed: the rows are shown below. Copy them by hand (Ctrl+C).', true);
   }
 });
 

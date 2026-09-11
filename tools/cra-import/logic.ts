@@ -141,15 +141,26 @@ export function readReferential(headers: string[], body: CellValue[][]): { proje
   return { projects, error: "" };
 }
 
-// 1) BS number in the VSA label equals Numéro. 2) Otherwise the client has
-// exactly one active project that does not carry a *different* BS number.
-// 3) Otherwise unknown. Every refusal names what to add in Admin.
+// 1) BS number in the VSA label equals Numéro; when several Admin rows share
+// that number (one per sprint, say), the one whose Projet name appears in the
+// VSA label wins. 2) Otherwise the client has exactly one active project that
+// does not carry a *different* BS number. 3) Otherwise unknown. Every refusal
+// names what to add in Admin.
 export function resolveProject(row: CraRow, ref: RefProject[]): { libelle: string; error: string } {
   const code = extractCode(row.project);
   if (code) {
     const byCode = ref.filter((p) => p.numero === code);
     if (byCode.length === 1) return { libelle: byCode[0].libelle, error: "" };
-    if (byCode.length > 1) return { libelle: "", error: `Numéro ${code} présent ${byCode.length} fois dans le référentiel Admin` };
+    if (byCode.length > 1) {
+      const label = normalizeKey(row.project);
+      const byName = byCode.filter((p) => p.projet && label.includes(normalizeKey(p.projet)));
+      if (byName.length === 1) return { libelle: byName[0].libelle, error: "" };
+      const names = byCode.map((p) => p.projet || "(sans nom)").join(", ");
+      return {
+        libelle: "",
+        error: `Numéro ${code} présent ${byCode.length} fois dans le référentiel Admin (${names}) et aucun de ces noms ne figure dans le libellé VSA « ${row.project} »`,
+      };
+    }
   }
   const client = normalizeKey(row.client);
   const byClient = client ? ref.filter((p) => normalizeKey(p.client) === client) : [];
