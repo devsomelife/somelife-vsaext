@@ -104,7 +104,8 @@ Track day to day in the extension, then push a whole month into VSA in one go.
   dropdown and records its project list, so the grid offers real values.
   Internal activities (Formation, Alternance Ecole, Intercontrat...) are synced
   too, listed after the clients; they take no project. Absence stays in VSA.
-  Run it with the VSA timesheet page open.
+  Run it with the VSA timesheet page open. A page without any line is fine:
+  sync adds one with `+`, leaves it empty and unsaved, and injection reuses it.
 - Fill the month grid with `Add row`. Entries are grouped under a header row
   per day showing the day's total out of 1 and its status: complete, missing
   some time, or over one day. The footer counts complete, partial and over days.
@@ -241,8 +242,14 @@ Verified directly against the live page:
 - Day cell writing: 1 day -> `7`, 0.5 -> `3.5` on a `HOUR`-format line, then
   restored. Works. Note the ids contain `((` and `[[`, so these fields must be
   reached with `getElementById`; `querySelector` throws on them.
-- Add line / project list loading: selectors and functions confirmed present
-  (`a.mainaction-add-like-plus` -> `addLine(...)`, `select#tiers_<row>` inline
-  `onchange` -> `getBdc(...)`), but both round-trip to `/service.php` and could
-  not be completed through the remote-debugging channel used during
-  development. They need a first run in the browser as a real content script.
+- Project list loading: `select#tiers_<row>` inline `onchange` -> `getBdc(...)`
+  round-trips to `/service.php`. It could not be completed through the
+  remote-debugging channel used early on, and works from the page itself.
+- Add line: `a.mainaction-add-like-plus` -> `addLine(...)` fetches the new line
+  from `/service.php`, then inserts it after
+  `#grid_thead_table_crapivot > tbody > tr[id^="line_"]:last`. With no line
+  left, that matches nothing and `+` silently adds nothing, even when clicked by
+  hand. The extension appends a hidden placeholder `tr#line_vsaext_anchor`
+  first, and removes it once the line arrived (about 170 ms, verified 2026-09).
+  The same class is on two hidden buttons (`addUow`, `addExtra`); the `addLine`
+  one comes first.

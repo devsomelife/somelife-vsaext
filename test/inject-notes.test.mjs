@@ -13,7 +13,8 @@ const INJECT = fileURLToPath(new URL('../src/content/inject.js', import.meta.url
 // to these files; code run through new Function is not counted at all.
 function load(document) {
   class FocusEvent extends Event {}
-  const ctx = vm.createContext({ document, Event, FocusEvent, setTimeout, clearTimeout });
+  // Timers and Date come from this realm, so a test can mock them before loading.
+  const ctx = vm.createContext({ document, Event, FocusEvent, setTimeout, clearTimeout, Date });
   for (const file of [SELECTORS, INJECT]) {
     vm.runInContext(readFileSync(file, 'utf8'), ctx, { filename: file });
   }
@@ -55,6 +56,7 @@ function fakeDom() {
   };
   const document = {
     getElementById,
+    createElement: (tag) => fakeElement('', { tagName: tag.toUpperCase() }),
     querySelector: (sel) => selectors.get(sel) ?? null,
     querySelectorAll: (sel) => (selectors.has(sel) ? [selectors.get(sel)] : []),
   };
@@ -63,6 +65,41 @@ function fakeDom() {
 
 const option = (value, text = value) => ({ value, text, disabled: false, parentElement: null });
 const ACTIVITY_SELECT = 'select.selectTimesheetLine[id^="tiers_"]';
+const PLUS = 'a.mainaction-add-like-plus';
+const LINE_ROW = 'tr[id^="line_"]';
+
+// The grid body and its "+". Like VSA's addLine, a click inserts the line after
+// an existing line row, and adds nothing when there is none. Without `act`,
+// VSA never answers.
+function fakeGrid(selectors, act) {
+  const lineRows = [];
+  const body = {
+    appendChild(el) {
+      el.remove = () => {
+        const i = lineRows.indexOf(el);
+        if (i >= 0) lineRows.splice(i, 1);
+      };
+      lineRows.push(el);
+      return el;
+    },
+    querySelector: (sel) => (sel === LINE_ROW ? lineRows.find((tr) => tr.id.startsWith('line_')) ?? null : null),
+  };
+  selectors.set('#grid_thead_table_crapivot > tbody', body);
+  const plus = {
+    clicks: 0,
+    anchorHidden: null,
+    click() {
+      plus.clicks++;
+      const after = body.querySelector(LINE_ROW);
+      if (!after || !act) return;
+      plus.anchorHidden = after.hidden;
+      lineRows.push({ id: 'line_r1' });
+      selectors.set(ACTIVITY_SELECT, act);
+    },
+  };
+  selectors.set(PLUS, plus);
+  return { lineRows, plus };
+}
 
 test('commentsByDay keeps only days that have a note, trimmed', () => {
   const { commentsByDay } = load(fakeDom().document);
@@ -206,6 +243,96 @@ test('fetchCatalog lists grouped internal activities without selecting them, cli
     { label: 'NORTHWIND TRADING', code: 'C-1', projects: [{ label: 'BS-99-000112 [Lot 1]', code: '98001|ATE' }] },
   ]);
   assert.deepEqual(chosen, ['C-1', 'I-INTERNE'], 'only clients are selected, then the original is restored');
+});
+
+test('fetchCatalog adds a line through "+" on a page without any, then syncs from it', async () => {
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [
+    option('I-INTERNE', 'Liste des activités'),
+    { ...option('C-1', 'NORTHWIND TRADING'), parentElement: { tagName: 'OPTGROUP', label: 'Clients' } },
+  ];
+  const project = fakeElement('project_r1', { options: [option('none', 'Choose a mission / project')] });
+  selectors.set('select.select_order[name="line[r1][order_id]"]', project);
+  act.onchange = () => {
+    project.options = act.value === 'C-1'
+      ? [option('none', 'Choose a mission / project'), option('98001|ATE', 'BS-99-000112 [Lot 1]')]
+      : [option('none', 'Choose a mission / project')];
+  };
+  const { lineRows, plus } = fakeGrid(selectors, act);
+
+  const catalog = await fetchCatalog();
+
+  assert.equal(plus.clicks, 1);
+  assert.equal(plus.anchorHidden, true, 'VSA inserted after a hidden placeholder line');
+  assert.deepEqual(lineRows.map((tr) => tr.id), ['line_r1'], 'the placeholder line is removed');
+  assert.deepEqual(JSON.parse(JSON.stringify(catalog)), [
+    { label: 'NORTHWIND TRADING', code: 'C-1', projects: [{ label: 'BS-99-000112 [Lot 1]', code: '98001|ATE' }] },
+  ]);
+  assert.equal(act.value, 'I-INTERNE', 'the added line is left empty');
+});
+
+test('fetchCatalog says the "+" button is missing on a page without any line', async () => {
+  const { fetchCatalog } = load(fakeDom().document);
+  await assert.rejects(fetchCatalog(), { message: 'no "+" button to add a timesheet line on this page' });
+});
+
+test('fetchCatalog says the grid is missing on a page without any line, without clicking "+"', async () => {
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  let clicks = 0;
+  selectors.set(PLUS, { click: () => clicks++ });
+
+  await assert.rejects(fetchCatalog(), { message: 'no timesheet grid on this page to add a line to' });
+  assert.equal(clicks, 0);
+});
+
+test('fetchCatalog removes the placeholder line when "+" never answers', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  const { lineRows, plus } = fakeGrid(selectors);
+
+  let settled = false;
+  const failed = assert
+    .rejects(fetchCatalog(), { message: 'new timesheet line did not appear, try again' })
+    .finally(() => {
+      settled = true;
+    });
+  // Mocked time only moves when ticked, so the wait is driven step by step.
+  for (let i = 0; !settled && i < 200; i++) {
+    await new Promise(setImmediate);
+    t.mock.timers.tick(150);
+  }
+  await failed;
+
+  assert.equal(plus.clicks, 1);
+  assert.deepEqual(lineRows, [], 'the placeholder line is removed');
+});
+
+test('prepareLines adds the first line on a page without any, then fills it', async () => {
+  const { selectors, document } = fakeDom();
+  const { prepareLines } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [option('I-INTERNE', 'Liste des activités'), option('C-1', 'NORTHWIND TRADING')];
+  const project = fakeElement('project_r1', { options: [option('none', 'Choose a mission / project')] });
+  selectors.set('select.select_order[name="line[r1][order_id]"]', project);
+  act.onchange = () => {
+    project.options = [option('none', 'Choose a mission / project'), option('98001|ATE', 'BS-99-000112 [Lot 1]')];
+  };
+  const { lineRows } = fakeGrid(selectors, act);
+
+  const [line] = await prepareLines([
+    { date: '2026-09-03', client: 'NORTHWIND TRADING', project: 'BS-99-000112 [Lot 1]', projectCode: '98001|ATE', days: 1 },
+  ]);
+
+  assert.equal(line.ok, true, line.error);
+  assert.equal(line.row, 'r1');
+  assert.equal(project.value, '98001|ATE');
+  assert.deepEqual(lineRows.map((tr) => tr.id), ['line_r1']);
 });
 
 test('prepareLines sets an internal activity once VSA rebuilt the unit text, and chooses no project', async () => {
