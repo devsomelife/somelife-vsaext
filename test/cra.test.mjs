@@ -81,6 +81,21 @@ test('buildAdminRows lists each client/number/project of the month once, complet
   assert.equal(skipped, 1);
 });
 
+test('internal activity rows go to the CRA with the activity as project, never to Admin', () => {
+  const rows = [
+    { date: '2026-09-07', client: 'Alternance Ecole', project: '', internal: true, days: 1, note: 'Cours' },
+    { date: '2026-09-08', client: 'NORTHWIND TRADING', project: 'BS-99-000079 [x] : Cellule 2026', days: 1, note: '' },
+  ];
+  const { payload, skipped } = buildCraPayload(rows, { month: '2026-09' });
+  assert.equal(skipped, 0);
+  assert.deepEqual(payload.rows[0], { date: '2026-09-07', client: 'Alternance Ecole', project: 'Alternance Ecole', days: 1, task: 'Cours' });
+
+  const admin = buildAdminRows(rows, { month: '2026-09' });
+  assert.deepEqual(admin.rows, [{ client: 'NORTHWIND TRADING', numero: 'BS-99-000079', projet: 'Cellule 2026' }]);
+  assert.equal(admin.internal, 1);
+  assert.equal(admin.skipped, 0);
+});
+
 test('serializeAdminRows makes one tab-separated line per row, Facturable and Oui filled in', () => {
   const TAB = String.fromCharCode(9);
   const NL = String.fromCharCode(10);

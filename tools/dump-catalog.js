@@ -25,20 +25,25 @@
     document.querySelector(`select.select_order[name="line[${row}][order_id]"]`);
   const original = act.value;
 
-  // Only clients are collected; internal activities are ignored. Clients carry
-  // a "C-" code in every locale, unlike the optgroup label ("Customers" in
-  // English, "Clients" in French).
+  // Clients carry a "C-" code in every locale, unlike the optgroup label
+  // ("Customers" in English, "Clients" in French). Internal activities are the
+  // "I-" options inside an optgroup; they have no projects, so they are listed
+  // without being selected. The ungrouped I-INTERNE and Absence are left out.
   const isClient = (o) =>
     o.value.startsWith('C-') ||
     (o.parentElement?.tagName === 'OPTGROUP' &&
       ['Customers', 'Clients'].includes(o.parentElement.label.trim()));
+  const isInternal = (o) =>
+    o.value.startsWith('I-') && o.parentElement?.tagName === 'OPTGROUP' && !isClient(o);
 
   const clients = [...act.options]
     .filter((o) => o.value && isClient(o))
     .map((o) => ({ label: o.text.trim(), code: o.value }));
 
-  console.log(`Reading ${clients.length} clients...`);
-  const out = [];
+  const out = [...act.options]
+    .filter(isInternal)
+    .map((o) => ({ label: o.text.trim(), code: o.value, internal: true, projects: [] }));
+  console.log(`${out.length} internal activities. Reading ${clients.length} clients...`);
 
   for (const [i, c] of clients.entries()) {
     const before = fingerprint(projSel());

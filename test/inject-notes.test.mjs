@@ -173,6 +173,71 @@ test('prepareLines selects client and project through change events', async () =
   assert.deepEqual(project.events, ['change']);
 });
 
+test('fetchCatalog lists grouped internal activities without selecting them, clients walked as before', async () => {
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  const act = document.getElementById('tiers_r1');
+  const internalGroup = { tagName: 'OPTGROUP', label: 'Activités internes' };
+  const clientGroup = { tagName: 'OPTGROUP', label: 'Clients' };
+  act.value = 'I-INTERNE';
+  act.options = [
+    option('I-INTERNE', 'Liste des activités'),
+    option('I-ABSENCE', 'Absence'),
+    { ...option('I-FORMATION', 'Formation'), parentElement: internalGroup },
+    { ...option('I-ALTERNANCE_ECOLE', 'Alternance Ecole'), parentElement: internalGroup },
+    { ...option('C-1', 'NORTHWIND TRADING'), parentElement: clientGroup },
+  ];
+  const project = fakeElement('project_r1', { options: [option('none', 'Choose a mission / project')] });
+  selectors.set(ACTIVITY_SELECT, act);
+  selectors.set('select.select_order[name="line[r1][order_id]"]', project);
+  const chosen = [];
+  act.onchange = () => {
+    chosen.push(act.value);
+    project.options = act.value === 'C-1'
+      ? [option('none', 'Choose a mission / project'), option('98001|ATE', 'BS-99-000112 [Lot 1]')]
+      : [option('none', 'Choose a mission / project')];
+  };
+
+  const catalog = await fetchCatalog();
+
+  assert.deepEqual(JSON.parse(JSON.stringify(catalog)), [
+    { label: 'Alternance Ecole', code: 'I-ALTERNANCE_ECOLE', internal: true, projects: [] },
+    { label: 'Formation', code: 'I-FORMATION', internal: true, projects: [] },
+    { label: 'NORTHWIND TRADING', code: 'C-1', projects: [{ label: 'BS-99-000112 [Lot 1]', code: '98001|ATE' }] },
+  ]);
+  assert.deepEqual(chosen, ['C-1', 'I-INTERNE'], 'only clients are selected, then the original is restored');
+});
+
+test('prepareLines sets an internal activity once VSA rebuilt the unit text, and chooses no project', async () => {
+  const { selectors, document } = fakeDom();
+  const { prepareLines } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [
+    option('I-INTERNE', 'Liste des activités'),
+    { ...option('I-ALTERNANCE_ECOLE', 'Alternance Ecole'), parentElement: { tagName: 'OPTGROUP', label: 'Activités internes' } },
+  ];
+  const unit = fakeElement('unit_r1', { firstChild: { text: 'heures' } });
+  selectors.set(ACTIVITY_SELECT, act);
+  selectors.set('p.time_r1', unit);
+  // VSA answers the change with the line's unit, replacing the text node.
+  act.onchange = () => {
+    setTimeout(() => {
+      unit.firstChild = { text: 'jours' };
+    }, 200);
+  };
+
+  const [line] = await prepareLines([
+    { date: '2026-09-07', client: 'Alternance Ecole', project: '', internal: true, days: 1 },
+  ]);
+
+  assert.equal(line.ok, true, line.error);
+  assert.equal(line.internal, true);
+  assert.equal(act.value, 'I-ALTERNANCE_ECOLE');
+  assert.deepEqual(act.events, ['change']);
+  assert.equal(unit.firstChild.text, 'jours', 'the reply had arrived when the line was reported ready');
+});
+
 test('inject.js never calls page handlers directly', () => {
   const src = readFileSync(INJECT, 'utf8');
   assert.doesNotMatch(src, /\.on(change|click|input|blur)\s*\(/);

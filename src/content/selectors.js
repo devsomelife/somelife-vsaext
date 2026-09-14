@@ -20,6 +20,10 @@
 //       div#div_comment_<n>_<row>. Saved by Save with the rest of the form.
 //
 // The visible unit is per line: input#input_format_<row> is "HOUR" or "DAY".
+// Each day cell also shows it as text in p.time_<row> ("jours" / "heures").
+// Choosing an activity makes VSA rebuild that text once its reply arrives,
+// even when the unit is unchanged: for an internal activity, which loads no
+// project list, that is the sign the line is ready.
 
 const VSA = {
   activitySelect: 'select.selectTimesheetLine[id^="tiers_"]',
@@ -55,8 +59,23 @@ const VSA = {
     if (group?.tagName !== 'OPTGROUP') return false;
     return Object.values(VSA.customersGroupLabels).includes(group.label.trim());
   },
+
+  // Internal activities ("Activités internes" / "Internal activities") are the
+  // "I-" options inside an optgroup. The two ungrouped "I-" options are left
+  // out: I-INTERNE is the empty "list of activities" value, and Absence goes
+  // through its own process in VSA. No project list comes with them.
+  internalCodePrefix: 'I-',
+
+  isInternalOption(option) {
+    return (
+      option.value.startsWith(VSA.internalCodePrefix) &&
+      option.parentElement?.tagName === 'OPTGROUP' &&
+      !VSA.isClientOption(option)
+    );
+  },
   descriptionFor: (row) => `#description_${row}`,
   formatFor: (row) => `#input_format_${row}`,
+  unitLabelFor: (row) => `p.time_${row}`,
   // These ids contain "((" and "[[", which are invalid CSS selector syntax --
   // they must be looked up with getElementById, never querySelector.
   dayInputId: (row, n) => `input_day_((${row}))_[[${n}]]`,

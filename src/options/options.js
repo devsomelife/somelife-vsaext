@@ -73,20 +73,32 @@ function shiftMonth(delta) {
 const esc = (s) =>
   String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-function optionsHtml(values, selected, placeholder) {
-  const known = values.includes(selected);
+// `groups` are extra { label, values } shown under an optgroup; an empty one is
+// left out.
+function optionsHtml(values, selected, placeholder, groups = []) {
+  const option = (v) => `<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`;
+  const known = values.includes(selected) || groups.some((g) => g.values.includes(selected));
   const opts = [`<option value="">${esc(placeholder)}</option>`];
   if (selected && !known) {
     opts.push(`<option value="${esc(selected)}" selected>${esc(selected)} (not in catalog)</option>`);
   }
-  for (const v of values) {
-    opts.push(`<option value="${esc(v)}"${v === selected ? ' selected' : ''}>${esc(v)}</option>`);
+  opts.push(...values.map(option));
+  for (const g of groups) {
+    if (g.values.length) opts.push(`<optgroup label="${esc(g.label)}">${g.values.map(option).join('')}</optgroup>`);
   }
   return opts.join('');
 }
 
-function clientLabels() {
-  return catalog.map((c) => c.label);
+function isInternal(label) {
+  return Boolean(catalog.find((c) => c.label === label)?.internal);
+}
+
+// Clients first, then internal activities under their own group, so an
+// alternance day is picked the same way as a client day.
+function clientOptionsHtml(selected) {
+  const clients = catalog.filter((c) => !c.internal).map((c) => c.label);
+  const internal = catalog.filter((c) => c.internal).map((c) => c.label);
+  return optionsHtml(clients, selected, 'Client...', [{ label: 'Internal activities', values: internal }]);
 }
 
 // Merging never deletes, so a client removed in VSA would linger forever.
@@ -105,16 +117,28 @@ function codeForProject(clientLabel, projectLabel) {
   return c?.projects.find((p) => p.label === projectLabel)?.code;
 }
 
+function describeCatalog() {
+  const clients = catalog.filter((c) => !c.internal);
+  const internal = catalog.length - clients.length;
+  const n = clients.reduce((s, c) => s + c.projects.length, 0);
+  return `${clients.length} clients, ${n} projects` + (internal ? `, ${internal} internal activities` : '');
+}
+
 function projectsFor(clientLabel) {
   const c = catalog.find((x) => x.label === clientLabel);
   return c ? c.projects.map((p) => p.label) : [];
+}
+
+// An internal activity takes no project, which the placeholder says.
+function projectPlaceholder(client) {
+  return isInternal(client) ? 'No project' : 'Project...';
 }
 
 function fillProjects(tr, client) {
   const sel = tr.querySelector('[data-f="project"]');
   const values = projectsFor(client);
   const current = sel.value;
-  sel.innerHTML = optionsHtml(values, values.includes(current) ? current : '', 'Project...');
+  sel.innerHTML = optionsHtml(values, values.includes(current) ? current : '', projectPlaceholder(client));
   sel.disabled = values.length === 0;
 }
 
@@ -129,10 +153,10 @@ function rowTemplate(e) {
     <td><button type="button" class="danger" data-act="del" title="Delete line" aria-label="Delete line">x</button></td>`;
 
   const clientSel = tr.querySelector('[data-f="client"]');
-  clientSel.innerHTML = optionsHtml(clientLabels(), e.client || '', 'Client...');
+  clientSel.innerHTML = clientOptionsHtml(e.client || '');
 
   const projectSel = tr.querySelector('[data-f="project"]');
-  projectSel.innerHTML = optionsHtml(projectsFor(e.client), e.project || '', 'Project...');
+  projectSel.innerHTML = optionsHtml(projectsFor(e.client), e.project || '', projectPlaceholder(e.client));
   projectSel.disabled = projectsFor(e.client).length === 0;
   // Labels are longer than the column, so the full text is available on hover.
   projectSel.title = e.project || '';
@@ -145,10 +169,14 @@ function rowTemplate(e) {
       // Days is numeric; everything else is stored as typed.
       e[field] = field === 'days' ? Number(el.value) || 0 : el.value;
 
-      // Changing client invalidates any project from the previous one.
+      // Changing client invalidates any project from the previous one. The
+      // internal flag travels with the entry, so injection and the CRA copy
+      // know the line has no project without reading the catalog.
       if (field === 'client') {
         fillProjects(tr, el.value);
         e.project = tr.querySelector('[data-f="project"]').value;
+        if (isInternal(el.value)) e.internal = true;
+        else delete e.internal;
       }
       // The option value is recorded alongside the label so injection can match
       // the project even after VSA reworded it.
@@ -285,8 +313,9 @@ async function saveCatalog() {
 // project list never replaces a non-empty one -- that case is a failed lookup,
 // not a client whose projects genuinely disappeared.
 function mergeCatalog(previous, incoming) {
-  // Internal activities were synced by earlier versions; drop them so an
-  // existing catalog cleans itself up on the next sync.
+  // Internal activities are read from the dropdown in one go, with no lookup
+  // that can fail, so every sync carries the full list: the previous ones are
+  // dropped, which also clears Absence left by early versions.
   const byCode = new Map(previous.filter((c) => !c.internal).map((c) => [c.code, c]));
   for (const c of incoming) {
     const old = byCode.get(c.code);
@@ -351,6 +380,7 @@ $('add-row').addEventListener('click', () => {
     client: last?.client ?? '',
     project: last?.project ?? '',
     projectCode: last?.projectCode,
+    ...(last?.internal ? { internal: true } : {}),
     days: 1,
     note: '',
   });
@@ -418,7 +448,7 @@ $('copy-cra').addEventListener('click', async () => {
     return say(`Cannot copy: ${problems.join('; ')}. Days must be multiples of 0.125.`, true);
   }
   if (!payload.rows.length) {
-    return say('Nothing complete to copy: each row needs a project and days.', true);
+    return say('Nothing complete to copy: each row needs a project (or an internal activity) and days.', true);
   }
   const text = serializeCraPayload(payload);
   const fallback = $('cra-fallback');
@@ -447,9 +477,14 @@ $('copy-cra').addEventListener('click', async () => {
 // straight into the Admin table (Client, Numéro, Projet, Type, Actif).
 $('copy-admin').addEventListener('click', async () => {
   const month = currentMonth();
-  const { rows, skipped } = buildAdminRows(entries, { month });
+  const { rows, skipped, internal } = buildAdminRows(entries, { month });
   if (!rows.length) {
-    return say('Nothing to copy: each row needs a project and days.', true);
+    return say(
+      internal
+        ? 'Nothing to copy: internal activities are not Admin projects.'
+        : 'Nothing to copy: each row needs a project and days.',
+      true
+    );
   }
   const text = serializeAdminRows(rows);
   const fallback = $('cra-fallback');
@@ -459,6 +494,7 @@ $('copy-admin').addEventListener('click', async () => {
     say(
       `Copied ${rows.length} project(s) for ${month}` +
         (skipped ? `, ${skipped} incomplete row(s) skipped` : '') +
+        (internal ? `, ${internal} internal activity row(s) left out` : '') +
         '. Send them to the CRA workbook owner, or paste them in the first empty row of the projects table on the Admin tab.'
     );
   } catch {
@@ -543,10 +579,9 @@ $('sync').addEventListener('click', async () => {
     catalog = mergeCatalog(catalog, res.catalog);
     await saveCatalog();
     render();
-    const n = catalog.reduce((s, c) => s + c.projects.length, 0);
     const stale = catalog.filter((c) => c.stale).length;
     say(
-      `Catalog synced: ${catalog.length} clients, ${n} projects.` +
+      `Catalog synced: ${describeCatalog()}.` +
         (stale ? ` ${stale} kept from a previous sync (lookup failed this time).` : '')
     );
   } catch (err) {
@@ -559,7 +594,7 @@ $('inject').addEventListener('click', async () => {
   const shown = all.filter(isComplete);
   const skipped = all.length - shown.length;
   if (!shown.length) {
-    return say('Nothing complete to inject: each row needs a project and days.', true);
+    return say('Nothing complete to inject: each row needs a project (or an internal activity) and days.', true);
   }
   say(`Injecting ${shown.length} entries...`);
   try {
@@ -719,7 +754,6 @@ $('next-month').addEventListener('click', () => shiftMonth(1));
   if (catalog.length === 0) {
     say('Open the VSA timesheet page, then sync clients & projects to start.', true);
   } else {
-    const n = catalog.reduce((s, c) => s + c.projects.length, 0);
-    say(`${catalog.length} clients and ${n} projects loaded.`);
+    say(`${describeCatalog()} loaded.`);
   }
 })();

@@ -56,6 +56,26 @@ async function waitForProjects(row, before, timeout = LIST_TIMEOUT_MS) {
   return seenChange ? document.querySelector(VSA.projectSelectFor(row)) : null;
 }
 
+// An internal activity loads no project list. VSA still answers the change: it
+// reloads the line's unit and rebuilds the unit text of every day cell, so a
+// replaced text node is what shows the reply arrived. Days written before it
+// could land in the wrong unit.
+function unitLabelNode(row) {
+  return document.querySelector(VSA.unitLabelFor(row))?.firstChild ?? null;
+}
+
+async function waitForLineUnit(row, before, timeout = LIST_TIMEOUT_MS) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (unitLabelNode(row) !== before) {
+      await sleep(SETTLE_MS);
+      return true;
+    }
+    await sleep(120);
+  }
+  return false;
+}
+
 // Projects are grouped under headers such as "Fixed-price contracts" and
 // "Time-based contracts". `select.options` flattens optgroups, so the headers
 // need no handling; only the "none" placeholder is dropped.
@@ -76,20 +96,24 @@ function fire(el, type) {
 }
 
 // Selecting an activity runs VSA's inline change handler (getBdc), which fetches
-// the projects for that client.
-async function chooseActivity(row, label) {
+// the projects for a client, or only the line's unit for an internal activity.
+async function chooseActivity(row, label, { internal = false } = {}) {
   const act = document.getElementById(`tiers_${row}`);
   if (!act) throw new Error(`row ${row}: activity select missing`);
   const opt = VSA.activityOptionByLabel(act, label);
-  if (!opt) throw new Error(`unknown client "${label}"`);
+  if (!opt) throw new Error(`unknown ${internal ? 'internal activity' : 'client'} "${label}"`);
 
   if (act.value !== opt.value) {
-    // Captured before the change, so it describes the list being replaced.
-    const before = projectsFingerprint(row);
+    // Captured before the change, so it describes what is being replaced.
+    const before = internal ? unitLabelNode(row) : projectsFingerprint(row);
     act.value = opt.value;
     fire(act, 'change');
-    const sel = await waitForProjects(row, before);
-    if (!sel) throw new Error(`no projects loaded for "${label}"`);
+    if (internal) {
+      if (!(await waitForLineUnit(row, before))) throw new Error(`"${label}" did not load`);
+    } else {
+      const sel = await waitForProjects(row, before);
+      if (!sel) throw new Error(`no projects loaded for "${label}"`);
+    }
   }
   return act;
 }
@@ -170,6 +194,7 @@ function groupByLine(entries) {
         client: e.client,
         project: e.project,
         projectCode: e.projectCode,
+        internal: Boolean(e.internal),
         days: [],
       });
     }
@@ -225,8 +250,9 @@ async function prepareLines(entries, onProgress) {
     let row = VSA.allRows()[i];
     try {
       if (!row) row = await addLine();
-      await chooseActivity(row, g.client);
-      await chooseProject(row, g.project, g.projectCode);
+      await chooseActivity(row, g.client, { internal: g.internal });
+      // An internal activity has no project select to fill.
+      if (!g.internal) await chooseProject(row, g.project, g.projectCode);
       prepared.push({ ...g, row, ok: true });
     } catch (err) {
       prepared.push({ ...g, row, ok: false, error: String(err.message || err) });
@@ -308,13 +334,16 @@ async function fetchCatalog(onProgress, onPartial) {
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 
-  // Only clients are synced. Internal activities (Absence, Formation...) have
-  // no project list and are left out of the catalog entirely.
+  // Clients are walked for their projects. Internal activities (Formation,
+  // Alternance École...) have no project list, so they are read straight from
+  // the dropdown and never selected.
   const clients = [...act.options]
     .filter((o) => o.value && VSA.isClientOption(o))
     .map((o) => ({ label: o.text.trim(), code: o.value }));
 
-  const catalog = [];
+  const catalog = [...act.options]
+    .filter((o) => VSA.isInternalOption(o))
+    .map((o) => ({ label: o.text.trim(), code: o.value, internal: true, projects: [] }));
 
   for (let i = 0; i < clients.length; i++) {
     const c = clients[i];

@@ -7,6 +7,9 @@
 // `projectCode` is the VSA option value; it is what injection matches on, since
 // project labels drift as days are booked against them.
 //
+// An internal activity (Formation, Alternance École...) is stored in `client`
+// with `internal: true` and an empty project: VSA gives it no project list.
+//
 // `days` is expressed the way VSA does: fractions of a day (1, 0.5, 0.25...).
 
 const KEY = 'entries';
@@ -83,7 +86,9 @@ export function normalize(rows) {
   return rows;
 }
 
-// Incomplete rows are excluded only at the point they would be sent to VSA.
+// Incomplete rows are excluded only at the point they would be sent to VSA. An
+// internal activity has no project, so the activity itself is what it needs.
 export function isComplete(entry) {
-  return Boolean(entry.date && entry.project && entry.days > 0);
+  const line = entry.internal ? entry.client : entry.project;
+  return Boolean(entry.date && line && entry.days > 0);
 }

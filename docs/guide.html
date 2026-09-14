@@ -95,7 +95,8 @@ vos projets changent dans VSA.</p>
 
 <div class="note">
 Vos clients et projets sont enregistrés sur cet ordinateur et survivent aux redémarrages.
-Seuls les clients sont chargés : les activités internes (Absence, Formation...) sont ignorées.
+Les activités internes (Formation, Alternance Ecole, Intercontrat...) sont chargées aussi, sans projet.
+L'absence reste à saisir directement dans VSA.
 </div>
 
 <h3>Au quotidien : saisir vos journées</h3>
@@ -103,6 +104,8 @@ Seuls les clients sont chargés : les activités internes (Absence, Formation...
   <li><span class="btn">Add row</span> ajoute une ligne, datée du lendemain de la précédente et reprenant
       le même client et le même projet : une semaine se saisit en quelques clics.</li>
   <li>Choisissez le <b>client</b>, puis le <b>projet</b>. La liste des projets ne propose que ceux du client retenu.</li>
+  <li>Pour une journée d'école, de formation ou d'intercontrat, choisissez l'activité dans le groupe
+      <b>Internal activities</b>, en bas de la liste des clients : le projet reste vide.</li>
   <li><b>Days</b> avance par huitièmes : <code>0,125</code> vaut une heure, <code>0,5</code> une demi-journée,
       <code>1</code> une journée complète.</li>
   <li><b>Note</b> n'est transmise à VSA que si vous cochez <b>Send notes to VSA as day comments</b> : elle devient alors le commentaire du jour dans VSA. Elle devient aussi la colonne <b>Tâche</b> du CRA d'équipe
@@ -155,7 +158,10 @@ heure entière bloque la copie, corrigez-la d'abord.<br>
 le bloc est encore dans I23.<br>
 <b>Pour éviter ce refus</b>, <span class="btn">Copy projects for Admin</span> copie les projets du mois affiché
 sous forme de lignes prêtes à coller dans le tableau de l'onglet Admin (client, numéro, nom du projet,
-Facturable, Oui) : envoyez-les à la personne qui tient le référentiel avant votre premier envoi du mois.
+Facturable, Oui) : envoyez-les à la personne qui tient le référentiel avant votre premier envoi du mois.<br>
+<b>Activités internes :</b> elles partent dans le bloc avec leur nom comme client et comme projet, sans numéro
+<code>BS-…</code>. Le classeur les reconnaît si l'onglet Admin a une ligne à ce nom de client.
+<span class="btn">Copy projects for Admin</span> les ignore.
 </div>
 
 <h2>Les boutons</h2>
@@ -192,7 +198,7 @@ resynchronisez, puis resélectionnez le projet. Aucune journée n'est inscrite s
 le reste du mois est donc bien reporté.</p>
 
 <h3>« Nothing complete to inject »</h3>
-<p>Chaque ligne doit comporter un projet et un nombre de journées supérieur à zéro. Les lignes
+<p>Chaque ligne doit comporter un projet (ou une activité interne) et un nombre de journées supérieur à zéro. Les lignes
 incomplètes restent dans la page de saisie mais sont ignorées au moment du report.</p>
 
 <h3>« Cannot copy: … not a whole number of hours »</h3>
