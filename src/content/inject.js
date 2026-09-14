@@ -207,9 +207,9 @@ function dayNumber(dateStr) {
   return Number(dateStr.slice(8, 10));
 }
 
-// VSA starts with a single empty line, so a month spanning several
-// client/project pairs needs extra lines. Clicking "+" is the only supported
-// way to create one; we wait for the new row id to appear.
+// A month spanning several client/project pairs needs one line each, and a
+// page may have none at all. Clicking "+" is the only supported way to create
+// one; we wait for the new row id to appear.
 //
 // VSA places the new line after the last existing one, so on a page without
 // any line "+" does nothing. A hidden placeholder line gives it that anchor,
@@ -220,10 +220,12 @@ async function addLine() {
   if (!btn) throw new Error('no "+" button to add a timesheet line on this page');
 
   const body = document.querySelector(VSA.gridBody);
+  // Without the grid, the first line has no anchor and "+" would only time out.
+  if (!body && before.size === 0) throw new Error('no timesheet grid on this page to add a line to');
   let anchor = null;
   if (body && !body.querySelector(VSA.lineRow)) {
     anchor = document.createElement('tr');
-    anchor.id = 'line_vsaext_anchor';
+    anchor.id = VSA.anchorLineId;
     anchor.hidden = true;
     body.appendChild(anchor);
   }
@@ -236,7 +238,7 @@ async function addLine() {
       if (fresh) return fresh;
       await sleep(150);
     }
-    throw new Error('new timesheet line did not appear');
+    throw new Error('new timesheet line did not appear, try again');
   } finally {
     anchor?.remove();
   }

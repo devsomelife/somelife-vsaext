@@ -89,6 +89,9 @@ const VSA = {
   // so once no line is left it silently inserts nothing.
   gridBody: '#grid_thead_table_crapivot > tbody',
   lineRow: 'tr[id^="line_"]',
+  // The hidden placeholder the extension adds as that anchor. Its id must
+  // match lineRow, or addLine still finds nothing to insert after.
+  anchorLineId: 'line_vsaext_anchor',
 
   rowIdOf(activityEl) {
     return activityEl.id.replace(/^tiers_/, '');
