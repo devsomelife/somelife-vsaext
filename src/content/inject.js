@@ -210,19 +210,36 @@ function dayNumber(dateStr) {
 // VSA starts with a single empty line, so a month spanning several
 // client/project pairs needs extra lines. Clicking "+" is the only supported
 // way to create one; we wait for the new row id to appear.
+//
+// VSA places the new line after the last existing one, so on a page without
+// any line "+" does nothing. A hidden placeholder line gives it that anchor,
+// and is removed once the new line arrived or the wait gave up.
 async function addLine() {
   const before = new Set(VSA.allRows());
   const btn = document.querySelector(VSA.addLineButton);
-  if (!btn) throw new Error('add-line button not found');
-  btn.click();
+  if (!btn) throw new Error('no "+" button to add a timesheet line on this page');
 
-  const started = Date.now();
-  while (Date.now() - started < LIST_TIMEOUT_MS) {
-    const fresh = VSA.allRows().find((r) => !before.has(r));
-    if (fresh) return fresh;
-    await sleep(150);
+  const body = document.querySelector(VSA.gridBody);
+  let anchor = null;
+  if (body && !body.querySelector(VSA.lineRow)) {
+    anchor = document.createElement('tr');
+    anchor.id = 'line_vsaext_anchor';
+    anchor.hidden = true;
+    body.appendChild(anchor);
   }
-  throw new Error('new timesheet line did not appear');
+
+  try {
+    btn.click();
+    const started = Date.now();
+    while (Date.now() - started < LIST_TIMEOUT_MS) {
+      const fresh = VSA.allRows().find((r) => !before.has(r));
+      if (fresh) return fresh;
+      await sleep(150);
+    }
+    throw new Error('new timesheet line did not appear');
+  } finally {
+    anchor?.remove();
+  }
 }
 
 // Fills the grid without saving. Returns a per-entry report so the options page
@@ -327,10 +344,10 @@ async function injectEntries(entries, onProgress, options = {}) {
 
 // Catalog sync: walk every client in the activity dropdown and collect the
 // project list VSA returns for it. Uses the first line as a scratch row and
-// restores its original value afterwards.
+// restores its original value afterwards. A page without any line gets one
+// through "+"; it stays empty and unsaved, and the next injection reuses it.
 async function fetchCatalog(onProgress, onPartial) {
-  const row = VSA.allRows()[0];
-  if (!row) throw new Error('no timesheet line on this page');
+  const row = VSA.allRows()[0] ?? (await addLine());
   const act = document.getElementById(`tiers_${row}`);
   const original = act.value;
 

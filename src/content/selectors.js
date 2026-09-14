@@ -85,6 +85,10 @@ const VSA = {
   // The "+" button: <a class="mainaction-add-like-plus"
   //   onclick="addLine('UITimesheetPivot','<ctx>')">
   addLineButton: 'a.mainaction-add-like-plus',
+  // addLine inserts the line it fetched after the last line row of this body,
+  // so once no line is left it silently inserts nothing.
+  gridBody: '#grid_thead_table_crapivot > tbody',
+  lineRow: 'tr[id^="line_"]',
 
   rowIdOf(activityEl) {
     return activityEl.id.replace(/^tiers_/, '');

@@ -55,6 +55,7 @@ function fakeDom() {
   };
   const document = {
     getElementById,
+    createElement: (tag) => fakeElement('', { tagName: tag.toUpperCase() }),
     querySelector: (sel) => selectors.get(sel) ?? null,
     querySelectorAll: (sel) => (selectors.has(sel) ? [selectors.get(sel)] : []),
   };
@@ -206,6 +207,59 @@ test('fetchCatalog lists grouped internal activities without selecting them, cli
     { label: 'NORTHWIND TRADING', code: 'C-1', projects: [{ label: 'BS-99-000112 [Lot 1]', code: '98001|ATE' }] },
   ]);
   assert.deepEqual(chosen, ['C-1', 'I-INTERNE'], 'only clients are selected, then the original is restored');
+});
+
+test('fetchCatalog adds a line through "+" on a page without any, then syncs from it', async () => {
+  const { selectors, document } = fakeDom();
+  const { fetchCatalog } = load(document);
+  const act = document.getElementById('tiers_r1');
+  act.value = 'I-INTERNE';
+  act.options = [
+    option('I-INTERNE', 'Liste des activités'),
+    { ...option('C-1', 'NORTHWIND TRADING'), parentElement: { tagName: 'OPTGROUP', label: 'Clients' } },
+  ];
+  const project = fakeElement('project_r1', { options: [option('none', 'Choose a mission / project')] });
+  selectors.set('select.select_order[name="line[r1][order_id]"]', project);
+  act.onchange = () => {
+    project.options = act.value === 'C-1'
+      ? [option('none', 'Choose a mission / project'), option('98001|ATE', 'BS-99-000112 [Lot 1]')]
+      : [option('none', 'Choose a mission / project')];
+  };
+  // VSA's addLine inserts the fetched line after the last line row, and adds
+  // nothing when there is none.
+  const lineRows = [];
+  const body = {
+    appendChild(el) {
+      el.remove = () => lineRows.splice(lineRows.indexOf(el), 1);
+      lineRows.push(el);
+      return el;
+    },
+    querySelector: (sel) => (sel === 'tr[id^="line_"]' ? lineRows.find((tr) => tr.id.startsWith('line_')) ?? null : null),
+  };
+  selectors.set('#grid_thead_table_crapivot > tbody', body);
+  let clicks = 0;
+  selectors.set('a.mainaction-add-like-plus', {
+    click() {
+      clicks++;
+      if (!body.querySelector('tr[id^="line_"]')) return;
+      lineRows.push({ id: 'line_r1' });
+      selectors.set(ACTIVITY_SELECT, act);
+    },
+  });
+
+  const catalog = await fetchCatalog();
+
+  assert.equal(clicks, 1);
+  assert.deepEqual(lineRows.map((tr) => tr.id), ['line_r1'], 'the placeholder line is removed');
+  assert.deepEqual(JSON.parse(JSON.stringify(catalog)), [
+    { label: 'NORTHWIND TRADING', code: 'C-1', projects: [{ label: 'BS-99-000112 [Lot 1]', code: '98001|ATE' }] },
+  ]);
+  assert.equal(act.value, 'I-INTERNE', 'the added line is left empty');
+});
+
+test('fetchCatalog says the "+" button is missing on a page without any line', async () => {
+  const { fetchCatalog } = load(fakeDom().document);
+  await assert.rejects(fetchCatalog(), { message: 'no "+" button to add a timesheet line on this page' });
 });
 
 test('prepareLines sets an internal activity once VSA rebuilt the unit text, and chooses no project', async () => {

@@ -104,7 +104,8 @@ Track day to day in the extension, then push a whole month into VSA in one go.
   dropdown and records its project list, so the grid offers real values.
   Internal activities (Formation, Alternance Ecole, Intercontrat...) are synced
   too, listed after the clients; they take no project. Absence stays in VSA.
-  Run it with the VSA timesheet page open.
+  Run it with the VSA timesheet page open. A page without any line is fine:
+  sync adds one with `+`, leaves it empty and unsaved, and injection reuses it.
 - Fill the month grid with `Add row`. Entries are grouped under a header row
   per day showing the day's total out of 1 and its status: complete, missing
   some time, or over one day. The footer counts complete, partial and over days.
@@ -246,3 +247,9 @@ Verified directly against the live page:
   `onchange` -> `getBdc(...)`), but both round-trip to `/service.php` and could
   not be completed through the remote-debugging channel used during
   development. They need a first run in the browser as a real content script.
+- Add line on a page without any line: `addLine(...)` fetches the new line,
+  then inserts it after `#grid_thead_table_crapivot > tbody > tr[id^="line_"]:last`.
+  With no line left, that matches nothing and `+` silently adds nothing, even
+  when clicked by hand. The extension appends a hidden placeholder
+  `tr#line_vsaext_anchor` first, and removes it once the line arrived (about
+  170 ms, verified 2026-09).
