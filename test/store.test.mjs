@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayStatus, groupByDay, summarizeDays } from '../src/shared/store.js';
+import { dayStatus, groupByDay, summarizeDays, isComplete } from '../src/shared/store.js';
+
+test('an internal activity row is complete without a project, a client row still needs one', () => {
+  const base = { date: '2026-09-07', days: 1, note: '' };
+  assert.equal(isComplete({ ...base, client: 'Alternance Ecole', project: '', internal: true }), true);
+  assert.equal(isComplete({ ...base, client: '', project: '', internal: true }), false);
+  assert.equal(isComplete({ ...base, client: 'NORTHWIND TRADING', project: '' }), false);
+  assert.equal(isComplete({ ...base, client: 'NORTHWIND TRADING', project: 'BS-99-000112 [Lot 1]' }), true);
+});
 
 const entry = (date, days, project = 'BS-99-000112 [Lot 1]') => ({
   date, days, project, client: 'NORTHWIND TRADING', note: '',

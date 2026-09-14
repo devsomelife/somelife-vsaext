@@ -25,6 +25,12 @@ function byDateThenProject(a, b) {
   return 0;
 }
 
+// An internal activity has no project and no BS number: its name stands in for
+// the project, and the workbook matches it through its client rule.
+function projectOf(e) {
+  return (e.internal ? e.client || '' : e.project || '').trim();
+}
+
 // Builds the block for one month. Incomplete rows are skipped and counted, as
 // injection does; rows whose days do not make a whole number of hours are
 // reported as problems and the caller must not copy anything.
@@ -36,14 +42,15 @@ export function buildCraPayload(entries, { month, person = '', hoursPerDay = HOU
   for (const e of complete) {
     const days = Number(e.days);
     const hours = days * hoursPerDay;
+    const project = projectOf(e);
     if (!isWhole(hours)) {
-      problems.push(`${e.date} ${e.project}: ${days} day(s) is ${hours} h, not a whole number of hours`);
+      problems.push(`${e.date} ${project}: ${days} day(s) is ${hours} h, not a whole number of hours`);
       continue;
     }
     rows.push({
       date: e.date,
       client: (e.client || '').trim(),
-      project: (e.project || '').trim(),
+      project,
       days,
       task: (e.note || '').trim(),
     });
@@ -104,11 +111,18 @@ export function projectNameOf(label) {
   return (bracket ? bracket[1] : rest).replace(WHITESPACE_RE, ' ').trim();
 }
 
+// Internal activities are not billable projects, so they never become Admin
+// rows; they are counted apart so the caller can say so.
 export function buildAdminRows(entries, { month }) {
   const inMonth = entriesForMonth(entries, month);
   const complete = inMonth.filter(isComplete);
   const seen = new Map();
+  let internal = 0;
   for (const e of complete) {
+    if (e.internal) {
+      internal++;
+      continue;
+    }
     const m = BS_CODE_RE.exec(e.project || '');
     const row = {
       client: (e.client || '').trim(),
@@ -120,7 +134,7 @@ export function buildAdminRows(entries, { month }) {
   const rows = [...seen.values()].sort((a, b) =>
     a.client.localeCompare(b.client) || a.numero.localeCompare(b.numero) || a.projet.localeCompare(b.projet)
   );
-  return { rows, skipped: inMonth.length - complete.length };
+  return { rows, skipped: inMonth.length - complete.length, internal };
 }
 
 // One tab-separated line per row, in the Admin table's column order:

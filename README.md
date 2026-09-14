@@ -102,6 +102,8 @@ Track day to day in the extension, then push a whole month into VSA in one go.
 - Toolbar icon opens the options page.
 - `Sync clients & projects from VSA` walks every client in the activity
   dropdown and records its project list, so the grid offers real values.
+  Internal activities (Formation, Alternance Ecole, Intercontrat...) are synced
+  too, listed after the clients; they take no project. Absence stays in VSA.
   Run it with the VSA timesheet page open.
 - Fill the month grid with `Add row`. Entries are grouped under a header row
   per day showing the day's total out of 1 and its status: complete, missing
@@ -112,7 +114,8 @@ Injection runs in two passes:
 
 1. **Structure** -- one timesheet line per client/project pair, with both
    dropdowns selected. This is the slow part: each client change round-trips to
-   VSA for its project list.
+   VSA for its project list. An internal activity line gets the activity only,
+   once VSA has reloaded the line's unit.
 2. **Time** -- writes the day cells. Local and instant.
 
 A line that fails in step 1 gets no days written in step 2, so a failed project
@@ -135,6 +138,8 @@ The workbook refuses a project its Admin referential does not know. `Copy
 projects for Admin` copies the month's projects as rows (client, BS number,
 project name, `Facturable`, `Oui`) that paste straight into that referential:
 send them to whoever keeps it before your first block of the month.
+Internal activity rows are sent to the CRA with the activity name as both
+client and project, and no BS number; they are never copied as Admin rows.
 With `Send notes to VSA as day comments` ticked (off by default), injection also
 writes each note as that day's comment in VSA.
 
@@ -211,8 +216,13 @@ Each timesheet line has a 13-char row id, e.g. `6aa007476cb4b`:
   also exists but is never populated -- it is not the project select.
   Projects sit under optgroup headers ("Fixed-price contracts", "Time-based
   contracts") and the list starts with a `none` placeholder.
-- Clients carry a `C-` code, internal activities an `I-` code. Only clients are
-  synced. The codes are identical in every locale; the optgroup label is not
+- Clients carry a `C-` code, internal activities an `I-` code. Clients are
+  walked for their projects. Internal activities are the `I-` options inside an
+  optgroup ("Activités internes"); the two ungrouped ones, `I-INTERNE` (the
+  empty "list of activities" value) and `I-ABSENCE`, are not synced. Selecting
+  an internal activity removes the project select and reloads the line's unit
+  and day cells, with no project list to wait for.
+  The codes are identical in every locale; the optgroup label is not
   (`Customers` in English, `Clients` in French), so the code is what identifies
   a client, with the labels kept only as a fallback. The options page has a
   language preference (auto, French, English) driving that fallback.
