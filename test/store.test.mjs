@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayStatus, groupByDay, summarizeDays, isComplete } from '../src/shared/store.js';
+import { dayStatus, groupByDay, summarizeDays, isComplete, rangeEntries } from '../src/shared/store.js';
 
 test('an internal activity row is complete without a project, a client row still needs one', () => {
   const base = { date: '2026-09-07', days: 1, note: '' };
@@ -64,4 +64,20 @@ test('the month summary counts days per status', () => {
 test('an empty month has no day groups', () => {
   assert.deepEqual(groupByDay([]), []);
   assert.deepEqual(summarizeDays([]), { complete: 0, partial: 0, over: 0 });
+});
+
+test('a range makes one independent entry per date', () => {
+  const rows = rangeEntries(
+    { client: 'NORTHWIND TRADING', project: 'BS-99-000112 [Lot 1]', projectCode: '10001|ATE', internal: false, days: 0.5, note: 'n' },
+    ['2026-09-01', '2026-09-02']
+  );
+  assert.deepEqual(rows[0], {
+    date: '2026-09-01', client: 'NORTHWIND TRADING', project: 'BS-99-000112 [Lot 1]',
+    projectCode: '10001|ATE', days: 0.5, note: 'n',
+  });
+  assert.equal(rows[1].date, '2026-09-02');
+  assert.notEqual(rows[0], rows[1]);
+  const internal = rangeEntries({ client: 'Formation', project: '', internal: true, days: 1 }, ['2026-09-01']);
+  assert.equal(internal[0].internal, true);
+  assert.equal(isComplete(internal[0]), true);
 });

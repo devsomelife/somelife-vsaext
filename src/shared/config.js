@@ -5,6 +5,8 @@
 // URL on the options page, grants permission for that host, and the content
 // script is registered against it at runtime.
 
+import { normalizeHolidaySettings } from './holidays.js';
+
 const KEY = 'timesheetUrl';
 const LANG_KEY = 'language';
 
@@ -111,4 +113,20 @@ export async function getCraUrl() {
 
 export async function setCraUrl(url) {
   await chrome.storage.local.set({ [CRA_URL_KEY]: normalizeCraUrl(url) });
+}
+
+// ---- Public holidays ---------------------------------------------------------
+
+const HOLIDAYS_KEY = 'holidays';
+
+// French defaults until the user changes something; see holidays.js.
+export async function getHolidaySettings() {
+  const bag = await chrome.storage.local.get(HOLIDAYS_KEY);
+  return normalizeHolidaySettings(bag[HOLIDAYS_KEY]);
+}
+
+export async function setHolidaySettings(settings) {
+  const clean = normalizeHolidaySettings(settings);
+  await chrome.storage.local.set({ [HOLIDAYS_KEY]: clean });
+  return clean;
 }

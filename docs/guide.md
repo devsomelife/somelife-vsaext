@@ -27,6 +27,8 @@ L'icône apparaît dans la barre d'outils. Un clic ouvre la page de saisie.
 
 À faire une seule fois. L'extension ne connaît aucune adresse à l'avance : sans cette étape, elle ne peut atteindre aucun site.
 
+Les réglages sont regroupés sous **Settings**, en haut de la page. Le panneau reste ouvert tant que l'adresse n'est pas enregistrée, puis se replie à l'ouverture suivante : un clic sur **Settings** le rouvre.
+
 ### Réglages facultatifs
 
 | Réglage | Rôle |
@@ -70,6 +72,32 @@ Une page VSA sans aucune ligne convient : l'extension en ajoute une avec le bout
 
 Tout est enregistré au fil de la frappe. Le pied de tableau affiche votre total, le nombre de jours complets, partiels ou en trop, et le nombre de lignes prêtes.
 
+### Saisie sur une plage de dates
+
+Pour le même temps sur le même projet plusieurs jours de suite (un projet suivi toute la semaine, une formation...) :
+
+1. Cliquez sur **Add range**. Le formulaire reprend le client, le projet et les journées de la dernière ligne du mois.
+2. Choisissez le **client**, le **projet**, les **Days** par jour et, si besoin, une **Note**.
+3. Indiquez **From** et **To**.
+4. Lisez l'aperçu : les jours retenus, les jours écartés, et les jours qui dépasseraient une journée avec les lignes déjà saisies.
+5. Cliquez sur **Add N rows** : une ligne est créée par jour, modifiable ensuite comme toute autre ligne.
+
+- Les week-ends et les jours fériés sont écartés par défaut. Cochez **Include weekends** ou **Include bank holidays** pour les garder.
+- Le formulaire reste ouvert pour enchaîner une autre plage, par exemple deux demi-journées sur deux projets la même semaine. **Cancel** le referme.
+- Une plage peut déborder sur le mois suivant : la ligne d'état indique combien de lignes y sont parties.
+- Une plage est limitée à 62 jours.
+
+### Jours fériés
+
+Le panneau **Public holidays**, sous les réglages, liste les jours écartés d'une plage. Il affiche les dates de l'année du mois affiché.
+
+- Les 11 jours fériés nationaux français sont cochés par défaut. Décochez-en un s'il est travaillé chez vous (lundi de Pentecôte en journée de solidarité, par exemple).
+- Vendredi saint et Saint-Étienne (Alsace-Moselle) sont proposés, décochés.
+- **Custom days off** ajoute vos propres jours : pont, fermeture d'entreprise, jour férié local. Une date et un libellé facultatif, puis **Add**.
+- **Reset to France defaults**, **Reset to UK defaults** et **Reset to USA defaults** remplacent la liste par celle du pays choisi et suppriment les jours ajoutés. La France reste la liste par défaut ; le titre du panneau indique le pays retenu.
+- **Royaume-Uni** : les jours fériés d'Angleterre et du pays de Galles sont cochés ; ceux d'Écosse et d'Irlande du Nord sont proposés, décochés. Un jour férié tombant un week-end est remplacé par le jour ouvré suivant (*substitute day*). Les jours exceptionnels (événements royaux) s'ajoutent en jours personnalisés.
+- **États-Unis** : les 11 jours fériés fédéraux sont cochés, le lendemain de Thanksgiving est proposé, décoché. Un jour férié tombant un samedi est chômé le vendredi, un dimanche le lundi (*observed*).
+
 ### Report dans VSA
 
 1. Ouvrez la page de saisie VSA, sur le bon mois.
@@ -109,12 +137,14 @@ Le classeur `CRA-Equipe.xlsx` de l'équipe reçoit vos journées avant leur repo
 | Bouton | Rôle |
 | --- | --- |
 | **Add row** | Ajoute une ligne au mois affiché. |
-| **Export JSON** | Sauvegarde complète : tous les mois et votre liste de clients. C'est le fichier que relit **Import JSON**. |
+| **Add range** | Ouvre le formulaire de saisie sur une plage de dates : une ligne par jour, hors week-ends et jours fériés sauf si vous les incluez. |
+| **Export JSON** | Sauvegarde complète : tous les mois, votre liste de clients et vos jours fériés. C'est le fichier que relit **Import JSON**. |
 | **Export CSV** | Le mois affiché sous forme de tableur, pour consultation ou partage. Non réimportable. |
 | **Copy for CRA sheet** | Copie le mois affiché dans le presse-papiers, prêt à coller dans la cellule I23 de votre onglet du CRA d'équipe. |
 | **Copy projects for Admin** | Copie les projets du mois affiché (client, numéro, nom du projet) en lignes prêtes à coller dans le référentiel de l'onglet Admin du CRA d'équipe. |
-| **Import JSON** | Restaure une sauvegarde. Journées et clients sont restaurés indépendamment : un fichier ne contenant que l'un laisse l'autre intact. |
+| **Import JSON** | Restaure une sauvegarde. Journées, clients et jours fériés sont restaurés indépendamment : ce qu'un fichier ne contient pas reste intact. |
 | **Sync clients & projects from VSA** | Recharge vos clients et leurs projets. Sans risque à répéter : l'opération ne fait qu'ajouter ou mettre à jour. |
+| **Reset to France / UK / USA defaults** | Remplace les jours fériés par la liste du pays et supprime vos jours ajoutés. |
 | **Reset catalog** | Vide la liste des clients pour la reconstruire proprement. Vos journées saisies ne sont pas touchées. |
 | **Inject this month into VSA** | Remplit la grille VSA avec les lignes du mois. N'enregistre pas. |
 | **Open** | Ouvre dans un nouvel onglet l'adresse enregistrée à côté : votre page de saisie VSA, ou le classeur CRA. Grisé tant qu'aucune adresse n'est enregistrée. |

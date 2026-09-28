@@ -65,6 +65,7 @@
 </ol>
 <p>À faire une seule fois. L'extension ne connaît aucune adresse à l'avance : sans cette étape,
 elle ne peut atteindre aucun site.</p>
+<p>Les réglages sont regroupés sous <b>Settings</b>, en haut de la page. Le panneau reste ouvert tant que l'adresse n'est pas enregistrée, puis se replie à l'ouverture suivante : un clic sur <b>Settings</b> le rouvre.</p>
 
 <p>Le réglage <b>VSA language</b> juste en dessous suit par défaut la langue de votre VSA.
 Laissez-le sur <i>Detect automatically</i> ; ne le forcez que si la détection se trompe.</p>
@@ -120,6 +121,33 @@ L'absence reste à saisir directement dans VSA.
 <p>Tout est enregistré au fil de la frappe. Le pied de tableau affiche votre total, le nombre de jours complets,
 partiels ou en trop, et le nombre de lignes prêtes.</p>
 
+<h3>Saisie sur une plage de dates</h3>
+<p>Pour le même temps sur le même projet plusieurs jours de suite (un projet suivi toute la semaine, une formation...) :</p>
+<ol class="steps">
+  <li>Cliquez sur <span class="btn">Add range</span>. Le formulaire reprend le client, le projet et les journées de la dernière ligne du mois.</li>
+  <li>Choisissez le <b>client</b>, le <b>projet</b>, les <b>Days</b> par jour et, si besoin, une <b>Note</b>.</li>
+  <li>Indiquez <b>From</b> et <b>To</b>.</li>
+  <li>Lisez l'aperçu : les jours retenus, les jours écartés, et les jours qui dépasseraient une journée avec les lignes déjà saisies.</li>
+  <li>Cliquez sur <span class="btn">Add N rows</span> : une ligne est créée par jour, modifiable ensuite comme toute autre ligne.</li>
+</ol>
+<ul>
+  <li>Les week-ends et les jours fériés sont écartés par défaut. Cochez <b>Include weekends</b> ou <b>Include bank holidays</b> pour les garder.</li>
+  <li>Le formulaire reste ouvert pour enchaîner une autre plage, par exemple deux demi-journées sur deux projets la même semaine. <span class="btn">Cancel</span> le referme.</li>
+  <li>Une plage peut déborder sur le mois suivant : la ligne d'état indique combien de lignes y sont parties.</li>
+  <li>Une plage est limitée à 62 jours.</li>
+</ul>
+
+<h3>Jours fériés</h3>
+<p>Le panneau <b>Public holidays</b>, sous les réglages, liste les jours écartés d'une plage. Il affiche les dates de l'année du mois affiché.</p>
+<ul>
+  <li>Les 11 jours fériés nationaux français sont cochés par défaut. Décochez-en un s'il est travaillé chez vous (lundi de Pentecôte en journée de solidarité, par exemple).</li>
+  <li>Vendredi saint et Saint-Étienne (Alsace-Moselle) sont proposés, décochés.</li>
+  <li><b>Custom days off</b> ajoute vos propres jours : pont, fermeture d'entreprise, jour férié local. Une date et un libellé facultatif, puis <span class="btn">Add</span>.</li>
+  <li><span class="btn">Reset to France defaults</span>, <span class="btn">Reset to UK defaults</span> et <span class="btn">Reset to USA defaults</span> remplacent la liste par celle du pays choisi et suppriment les jours ajoutés. La France reste la liste par défaut ; le titre du panneau indique le pays retenu.</li>
+  <li><b>Royaume-Uni</b> : les jours fériés d'Angleterre et du pays de Galles sont cochés ; ceux d'Écosse et d'Irlande du Nord sont proposés, décochés. Un jour férié tombant un week-end est remplacé par le jour ouvré suivant (<i>substitute day</i>). Les jours exceptionnels (événements royaux) s'ajoutent en jours personnalisés.</li>
+  <li><b>États-Unis</b> : les 11 jours fériés fédéraux sont cochés, le lendemain de Thanksgiving est proposé, décoché. Un jour férié tombant un samedi est chômé le vendredi, un dimanche le lundi (<i>observed</i>).</li>
+</ul>
+
 <h3>Le moment venu : reporter dans VSA</h3>
 <ol class="steps">
   <li>Ouvrez la page de saisie VSA, sur le bon mois.</li>
@@ -170,12 +198,14 @@ Facturable, Oui) : envoyez-les à la personne qui tient le référentiel avant v
 <table>
   <tr><th>Bouton</th><th>Rôle</th></tr>
   <tr><td><span class="btn">Add row</span></td><td>Ajoute une ligne au mois affiché.</td></tr>
-  <tr><td><span class="btn">Export JSON</span></td><td>Sauvegarde complète : tous les mois et votre liste de clients. C'est le fichier que relit <b>Import JSON</b>.</td></tr>
+  <tr><td><span class="btn">Add range</span></td><td>Ouvre le formulaire de saisie sur une plage de dates : une ligne par jour, hors week-ends et jours fériés sauf si vous les incluez.</td></tr>
+  <tr><td><span class="btn">Export JSON</span></td><td>Sauvegarde complète : tous les mois, votre liste de clients et vos jours fériés. C'est le fichier que relit <b>Import JSON</b>.</td></tr>
   <tr><td><span class="btn">Export CSV</span></td><td>Le mois affiché sous forme de tableur, pour consultation ou partage. Non réimportable.</td></tr>
   <tr><td><span class="btn">Copy for CRA sheet</span></td><td>Copie le mois affiché dans le presse-papiers, prêt à coller dans la cellule I23 de votre onglet du CRA d'équipe.</td></tr>
   <tr><td><span class="btn">Copy projects for Admin</span></td><td>Copie les projets du mois affiché (client, numéro, nom du projet) en lignes prêtes à coller dans le référentiel de l'onglet Admin du CRA d'équipe.</td></tr>
-  <tr><td><span class="btn">Import JSON</span></td><td>Restaure une sauvegarde. Journées et clients sont restaurés indépendamment : un fichier ne contenant que l'un laisse l'autre intact.</td></tr>
+  <tr><td><span class="btn">Import JSON</span></td><td>Restaure une sauvegarde. Journées, clients et jours fériés sont restaurés indépendamment : ce qu'un fichier ne contient pas reste intact.</td></tr>
   <tr><td><span class="btn">Sync clients &amp; projects from VSA</span></td><td>Recharge vos clients et leurs projets. Sans risque à répéter : l'opération ne fait qu'ajouter ou mettre à jour.</td></tr>
+  <tr><td><span class="btn">Reset to France / UK / USA defaults</span></td><td>Remplace les jours fériés par la liste du pays et supprime vos jours ajoutés.</td></tr>
   <tr><td><span class="btn">Reset catalog</span></td><td>Vide la liste des clients pour la reconstruire proprement. Vos journées saisies ne sont pas touchées.</td></tr>
   <tr><td><span class="btn">Inject this month into VSA</span></td><td>Remplit la grille VSA avec les lignes du mois. N'enregistre pas.</td></tr>
   <tr><td><span class="btn">Open</span></td><td>Ouvre dans un nouvel onglet l'adresse enregistrée à côté : votre page de saisie VSA, ou le classeur CRA. Grisé tant qu'aucune adresse n'est enregistrée.</td></tr>

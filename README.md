@@ -3,7 +3,7 @@
 Browser extension for the VSA timesheet pivot page, for Chrome, Edge and Firefox.
 
 - Widens the timesheet dropdowns so project labels are readable.
-- Tracks time day to day, then fills a whole month into VSA in one go, without saving.
+- Tracks time day to day, or over a date range skipping weekends and bank holidays (France by default, UK and USA available), then fills a whole month into VSA in one go, without saving.
 - Sends the month to the team CRA workbook by copy and paste.
 
 ## Documentation
