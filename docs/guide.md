@@ -27,7 +27,7 @@ L'icône apparaît dans la barre d'outils. Un clic ouvre la page de saisie.
 
 À faire une seule fois. L'extension ne connaît aucune adresse à l'avance : sans cette étape, elle ne peut atteindre aucun site.
 
-Les réglages sont regroupés sous **Settings**, en haut de la page. Le panneau reste ouvert tant que l'adresse n'est pas enregistrée, puis se replie à l'ouverture suivante : un clic sur **Settings** le rouvre.
+Les réglages sont regroupés sous **Settings**, en haut de la page. Le panneau s'ouvre de lui-même tant que l'adresse n'est pas enregistrée, ou si l'accès au site a été retiré, et reste replié sinon : un clic sur **Settings** le rouvre.
 
 ### Réglages facultatifs
 
@@ -85,7 +85,7 @@ Pour le même temps sur le même projet plusieurs jours de suite (un projet suiv
 - Les week-ends et les jours fériés sont écartés par défaut. Cochez **Include weekends** ou **Include bank holidays** pour les garder.
 - Le formulaire reste ouvert pour enchaîner une autre plage, par exemple deux demi-journées sur deux projets la même semaine. **Cancel** le referme.
 - Une plage peut déborder sur le mois suivant : la ligne d'état indique combien de lignes y sont parties.
-- Une plage est limitée à 62 jours.
+- Une plage couvre au plus 62 jours du calendrier, week-ends compris.
 
 ### Jours fériés
 

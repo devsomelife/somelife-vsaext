@@ -102,6 +102,13 @@ export function addDays(date, n) {
   return fromUtc(toUtc(date) + n * DAY_MS);
 }
 
+// Calendar days from `from` to `to`, both included; 0 when either is not a date
+// or the range is inverted.
+export function spanDays(from, to) {
+  if (!isDate(from) || !isDate(to) || from > to) return 0;
+  return (toUtc(to) - toUtc(from)) / DAY_MS + 1;
+}
+
 export function isWeekend(date) {
   const day = weekday(date);
   return day === 0 || day === 6;
@@ -154,12 +161,13 @@ export function normalizeHolidaySettings(input) {
   const country = COUNTRIES[input?.country] ? input.country : DEFAULT_COUNTRY;
   const ids = new Set(rulesOf(country).map((r) => r.id));
   const list = (v) => (Array.isArray(v) ? [...new Set(v.filter((id) => ids.has(id)))] : []);
-  const custom = Array.isArray(input?.custom)
-    ? input.custom
-        .filter((c) => isDate(c?.date))
-        .map((c) => ({ date: c.date, label: String(c.label ?? '').trim() }))
-        .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
-    : [];
+  // One custom day per date, the last one winning, as when the user adds a date
+  // that is already listed.
+  const byDate = new Map();
+  for (const c of Array.isArray(input?.custom) ? input.custom : []) {
+    if (isDate(c?.date)) byDate.set(c.date, { date: c.date, label: String(c.label ?? '').trim() });
+  }
+  const custom = [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   return { country, disabled: list(input?.disabled), enabled: list(input?.enabled), custom };
 }
 

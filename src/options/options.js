@@ -34,9 +34,11 @@ import {
   DEFAULT_HOLIDAY_SETTINGS,
   addDays,
   holidayDefaults,
+  normalizeHolidaySettings,
   observedWord,
   rangeDates,
   ruleDays,
+  spanDays,
   toggleRule,
 } from '../shared/holidays.js';
 import { buildCraPayload, serializeCraPayload, buildAdminRows, serializeAdminRows } from '../shared/cra.js';
@@ -56,7 +58,12 @@ let configured = false;
 let craSheetName = '';
 let holidaySettings = { ...DEFAULT_HOLIDAY_SETTINGS };
 
-const todayMonth = new Date().toISOString().slice(0, 7);
+// Local date parts, not toISOString(): that is UTC, which is still the previous
+// month for the first hour or two of the 1st in France.
+const todayMonth = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
 
 function say(msg, isError) {
   statusEl.textContent = msg;
@@ -409,8 +416,9 @@ $('add-row').addEventListener('click', () => {
 
 // One form, one row per day: the same client, project and days over a span of
 // dates. Weekends and bank holidays are left out unless the user ticks them.
-// A month and a bit is plenty; beyond that a typo in a year is more likely than
-// intent.
+// The span from start to end is capped, weekends included: a month and a bit is
+// plenty, and beyond that a typo in a year is more likely than intent. Checking
+// the span first also spares walking centuries of days on every keystroke.
 const RANGE_MAX_DAYS = 62;
 
 function fillRangeProjects(selected) {
@@ -445,15 +453,18 @@ function rangeTemplate() {
 }
 
 function computeRange() {
-  return rangeDates(
+  const span = spanDays($('range-from').value, $('range-to').value);
+  if (span > RANGE_MAX_DAYS) return { dates: [], skipped: [], span };
+  const range = rangeDates(
     $('range-from').value,
     $('range-to').value,
     { weekends: $('range-weekends').checked, holidays: $('range-holidays').checked },
     holidaySettings
   );
+  return { ...range, span };
 }
 
-function rangeProblem(t, dates) {
+function rangeProblem(t, { dates, span }) {
   const from = $('range-from').value;
   const to = $('range-to').value;
   if (!t.client) return 'Pick a client or an internal activity.';
@@ -461,8 +472,8 @@ function rangeProblem(t, dates) {
   if (!(t.days > 0 && t.days <= 1)) return 'Days must be more than 0 and at most 1.';
   if (!from || !to) return 'Pick a start and an end date.';
   if (from > to) return 'The end date must be on or after the start date.';
+  if (span > RANGE_MAX_DAYS) return `That spans ${span} days; a range is limited to ${RANGE_MAX_DAYS}.`;
   if (!dates.length) return 'No day left in that range once weekends and bank holidays are left out.';
-  if (dates.length > RANGE_MAX_DAYS) return `That is ${dates.length} days; a range is limited to ${RANGE_MAX_DAYS}.`;
   return '';
 }
 
@@ -477,8 +488,9 @@ function setHint(el, msg, color) {
 function updateRangePreview() {
   if ($('range').hidden) return;
   const t = rangeTemplate();
-  const { dates, skipped } = computeRange();
-  const problem = rangeProblem(t, dates);
+  const range = computeRange();
+  const { dates, skipped } = range;
+  const problem = rangeProblem(t, range);
   const submit = $('range-submit');
   submit.disabled = Boolean(problem);
   submit.textContent = problem ? 'Add rows' : `Add ${dates.length} row${dates.length > 1 ? 's' : ''}`;
@@ -542,8 +554,9 @@ $('range-cancel').addEventListener('click', () => {
 // days on different projects over the same week.
 $('range-submit').addEventListener('click', () => {
   const t = rangeTemplate();
-  const { dates } = computeRange();
-  const problem = rangeProblem(t, dates);
+  const range = computeRange();
+  const { dates } = range;
+  const problem = rangeProblem(t, range);
   if (problem) return say(problem, true);
   entries.push(...rangeEntries(t, dates));
   persist();
@@ -576,6 +589,9 @@ const fullDate = (date) => {
 
 // Shown for the year of the displayed month, so the dates follow < and >.
 function renderHolidays() {
+  // The lists are rebuilt, so a focused rule checkbox is focused again by id:
+  // otherwise a keyboard user toggling rules is sent back to the top each time.
+  const focused = $('holidays').contains(document.activeElement) ? document.activeElement.id : '';
   const year = Number(currentMonth().slice(0, 4));
   $('holidays-country').textContent = COUNTRIES[holidaySettings.country].name;
   $('holidays-year').textContent = `(${year})`;
@@ -618,6 +634,7 @@ function renderHolidays() {
     return tr;
   });
   $('holiday-custom').replaceChildren(...(custom.length ? custom : [holidayRow('None yet.')]));
+  if (focused) $(focused)?.focus();
 }
 
 function holidayRow(text) {
@@ -626,10 +643,13 @@ function holidayRow(text) {
   return tr;
 }
 
+// The in-memory settings change before the write, so a second toggle made
+// while the first is still being stored builds on it instead of undoing it.
 async function saveHolidays(next, message) {
-  holidaySettings = await setHolidaySettings(next);
+  holidaySettings = normalizeHolidaySettings(next);
   renderHolidays();
   updateRangePreview();
+  await setHolidaySettings(holidaySettings);
   if (message) say(message);
 }
 
@@ -830,7 +850,7 @@ $('import-file').addEventListener('change', async (e) => {
       const n = catalog.reduce((s, c) => s + c.projects.length, 0);
       parts.push(`${catalog.length} clients, ${n} projects`);
     }
-    if (data.holidays && typeof data.holidays === 'object') {
+    if (data.holidays && typeof data.holidays === 'object' && !Array.isArray(data.holidays)) {
       holidaySettings = await setHolidaySettings(data.holidays);
       parts.push('holiday settings');
     }

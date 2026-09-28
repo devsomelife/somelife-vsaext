@@ -13,6 +13,7 @@ import {
   holidayDefaults,
   nthWeekday,
   ruleDays,
+  spanDays,
   FRENCH_RULES,
   DEFAULT_HOLIDAY_SETTINGS,
 } from '../src/shared/holidays.js';
@@ -190,4 +191,45 @@ test('a range skips the country holidays', () => {
     skipped.filter((s) => s.reason !== 'weekend').map((s) => s.date),
     ['2026-12-25', '2026-12-28']
   );
+});
+
+test('a USA range skips New Year observed in the previous December', () => {
+  const { skipped } = rangeDates('2027-12-27', '2028-01-03', {}, us);
+  assert.deepEqual(
+    skipped.filter((s) => s.reason !== 'weekend'),
+    [{ date: '2027-12-31', reason: "New Year's Day (observed)" }]
+  );
+});
+
+test('UK substitute days for 2027 and 2028', () => {
+  const y2027 = holidaysFor(2027, uk);
+  assert.equal(y2027.get('2027-12-27'), 'Christmas Day (substitute day)');
+  assert.equal(y2027.get('2027-12-28'), 'Boxing Day (substitute day)');
+  assert.equal(holidaysFor(2028, uk).get('2028-01-03'), "New Year's Day (substitute day)");
+});
+
+test('custom days are one per date, the last one winning', () => {
+  const s = normalizeHolidaySettings({ custom: [{ date: '2026-12-28', label: 'x' }, { date: '2026-12-28', label: 'y' }] });
+  assert.deepEqual(s.custom, [{ date: '2026-12-28', label: 'y' }]);
+});
+
+test('an array or null in place of settings gives the French defaults', () => {
+  assert.deepEqual(normalizeHolidaySettings([]), defaults);
+  assert.deepEqual(normalizeHolidaySettings(null), defaults);
+});
+
+test('a holiday on a weekend is reported as a weekend when weekends are left out', () => {
+  const s = normalizeHolidaySettings({ custom: [{ date: '2026-09-05', label: 'Fete locale' }] });
+  assert.deepEqual(rangeDates('2026-09-05', '2026-09-05', {}, s).skipped, [{ date: '2026-09-05', reason: 'weekend' }]);
+  assert.deepEqual(rangeDates('2026-09-05', '2026-09-05', { weekends: true }, s).skipped, [
+    { date: '2026-09-05', reason: 'Fete locale' },
+  ]);
+});
+
+test('the span counts calendar days, weekends included', () => {
+  assert.equal(spanDays('2026-09-01', '2026-09-01'), 1);
+  assert.equal(spanDays('2026-09-01', '2026-10-31'), 61);
+  assert.equal(spanDays('2026-03-01', '2026-04-01'), 32);
+  assert.equal(spanDays('2026-09-05', '2026-09-01'), 0);
+  assert.equal(spanDays('', '2026-09-01'), 0);
 });
