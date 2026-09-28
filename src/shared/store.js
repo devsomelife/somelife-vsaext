@@ -92,3 +92,17 @@ export function isComplete(entry) {
   const line = entry.internal ? entry.client : entry.project;
   return Boolean(entry.date && line && entry.days > 0);
 }
+
+// One entry per date, copied from a template row: the range entry. Each is its
+// own object, so editing one row later leaves the others alone.
+export function rangeEntries(template, dates) {
+  return dates.map((date) => ({
+    date,
+    client: template.client,
+    project: template.project,
+    projectCode: template.projectCode,
+    ...(template.internal ? { internal: true } : {}),
+    days: Number(template.days) || 0,
+    note: template.note ?? '',
+  }));
+}

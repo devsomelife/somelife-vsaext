@@ -13,6 +13,8 @@ import {
   setCraSheetName,
   getCraUrl,
   setCraUrl,
+  getHolidaySettings,
+  setHolidaySettings,
 } from '../shared/config.js';
 import {
   loadEntries,
@@ -25,7 +27,20 @@ import {
   groupByDay,
   dayStatus,
   summarizeDays,
+  rangeEntries,
 } from '../shared/store.js';
+import {
+  COUNTRIES,
+  DEFAULT_HOLIDAY_SETTINGS,
+  addDays,
+  holidayDefaults,
+  normalizeHolidaySettings,
+  observedWord,
+  rangeDates,
+  ruleDays,
+  spanDays,
+  toggleRule,
+} from '../shared/holidays.js';
 import { buildCraPayload, serializeCraPayload, buildAdminRows, serializeAdminRows } from '../shared/cra.js';
 
 const $ = (id) => document.getElementById(id);
@@ -41,8 +56,14 @@ let configured = false;
 // click's user activation, which clipboard access requires (strictly so in
 // Firefox).
 let craSheetName = '';
+let holidaySettings = { ...DEFAULT_HOLIDAY_SETTINGS };
 
-const todayMonth = new Date().toISOString().slice(0, 7);
+// Local date parts, not toISOString(): that is UTC, which is still the previous
+// month for the first hour or two of the 1st in France.
+const todayMonth = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
 
 function say(msg, isError) {
   statusEl.textContent = msg;
@@ -226,6 +247,7 @@ function updateTotal() {
   // The CRA block needs no VSA configuration, only something complete to send.
   $('copy-cra').disabled = complete === 0;
   $('copy-admin').disabled = complete === 0;
+  updateRangePreview();
 }
 
 const formatDays = (n) => String(Number(n.toFixed(3)));
@@ -297,6 +319,8 @@ function render() {
     rows.push(dayHeaderRow(day), ...day.entries.map((e) => rowTemplate(e)));
   }
   rowsEl.replaceChildren(...rows);
+  refreshRangeCatalog();
+  renderHolidays();
   updateTotal();
   updateButtons();
 }
@@ -388,6 +412,271 @@ $('add-row').addEventListener('click', () => {
   render();
 });
 
+// ---- Range entry -------------------------------------------------------------
+
+// One form, one row per day: the same client, project and days over a span of
+// dates. Weekends and bank holidays are left out unless the user ticks them.
+// The span from start to end is capped, weekends included: a month and a bit is
+// plenty, and beyond that a typo in a year is more likely than intent. Checking
+// the span first also spares walking centuries of days on every keystroke.
+const RANGE_MAX_DAYS = 62;
+
+function fillRangeProjects(selected) {
+  const client = $('range-client').value;
+  const values = projectsFor(client);
+  const sel = $('range-project');
+  sel.innerHTML = optionsHtml(values, values.includes(selected) ? selected : '', projectPlaceholder(client));
+  sel.disabled = values.length === 0;
+  sel.title = sel.value;
+}
+
+// Keeps the panel's selects in step with the catalog after a sync, reset or
+// import, without losing what the user already picked.
+function refreshRangeCatalog() {
+  if ($('range').hidden) return;
+  const project = $('range-project').value;
+  $('range-client').innerHTML = clientOptionsHtml($('range-client').value);
+  fillRangeProjects(project);
+}
+
+function rangeTemplate() {
+  const client = $('range-client').value;
+  const project = $('range-project').value;
+  return {
+    client,
+    project,
+    projectCode: codeForProject(client, project),
+    internal: isInternal(client),
+    days: Number($('range-days').value) || 0,
+    note: $('range-note').value.trim(),
+  };
+}
+
+function computeRange() {
+  const span = spanDays($('range-from').value, $('range-to').value);
+  if (span > RANGE_MAX_DAYS) return { dates: [], skipped: [], span };
+  const range = rangeDates(
+    $('range-from').value,
+    $('range-to').value,
+    { weekends: $('range-weekends').checked, holidays: $('range-holidays').checked },
+    holidaySettings
+  );
+  return { ...range, span };
+}
+
+function rangeProblem(t, { dates, span }) {
+  const from = $('range-from').value;
+  const to = $('range-to').value;
+  if (!t.client) return 'Pick a client or an internal activity.';
+  if (!t.internal && !t.project) return 'Pick a project.';
+  if (!(t.days > 0 && t.days <= 1)) return 'Days must be more than 0 and at most 1.';
+  if (!from || !to) return 'Pick a start and an end date.';
+  if (from > to) return 'The end date must be on or after the start date.';
+  if (span > RANGE_MAX_DAYS) return `That spans ${span} days; a range is limited to ${RANGE_MAX_DAYS}.`;
+  if (!dates.length) return 'No day left in that range once weekends and bank holidays are left out.';
+  return '';
+}
+
+const listDays = (dates) =>
+  dates.length <= 7 ? dates.map(dayLabel).join('; ') : `${dayLabel(dates[0])} ... ${dayLabel(dates.at(-1))}`;
+
+function setHint(el, msg, color) {
+  el.textContent = msg;
+  el.style.color = color || '';
+}
+
+function updateRangePreview() {
+  if ($('range').hidden) return;
+  const t = rangeTemplate();
+  const range = computeRange();
+  const { dates, skipped } = range;
+  const problem = rangeProblem(t, range);
+  const submit = $('range-submit');
+  submit.disabled = Boolean(problem);
+  submit.textContent = problem ? 'Add rows' : `Add ${dates.length} row${dates.length > 1 ? 's' : ''}`;
+
+  if (problem) {
+    setHint($('range-preview'), problem, '#c33');
+  } else {
+    // Warned, not refused: a day can legitimately be over while the user is
+    // still moving time around.
+    const totals = new Map(groupByDay(entries).map((d) => [d.date, d.total]));
+    const over = dates.filter((d) => (totals.get(d) ?? 0) + t.days > 1 + 1e-9);
+    setHint(
+      $('range-preview'),
+      `${dates.length} row${dates.length > 1 ? 's' : ''}: ${listDays(dates)}.` +
+        (over.length ? ` ${over.length} day(s) would go over 1: ${listDays(over)}.` : ''),
+      over.length ? '#c60' : ''
+    );
+  }
+
+  const weekends = skipped.filter((s) => s.reason === 'weekend').length;
+  const holidays = skipped.filter((s) => s.reason !== 'weekend').map((s) => `${dayLabel(s.date)} ${s.reason}`);
+  const parts = [...(weekends ? [`${weekends} weekend day${weekends > 1 ? 's' : ''}`] : []), ...holidays];
+  setHint($('range-skipped'), parts.length ? `Skipped: ${parts.join('; ')}.` : '');
+}
+
+// Prefilled like Add row: the last row's client, project and days, starting the
+// day after it. Both options start unticked every time.
+$('add-range').addEventListener('click', () => {
+  const last = entriesForMonth(entries, currentMonth()).at(-1);
+  const from = last ? addDays(last.date, 1) : `${currentMonth()}-01`;
+  $('range-client').innerHTML = clientOptionsHtml(last?.client ?? '');
+  fillRangeProjects(last?.project ?? '');
+  $('range-days').value = last?.days || 1;
+  $('range-note').value = '';
+  $('range-from').value = from;
+  $('range-to').value = from;
+  $('range-weekends').checked = false;
+  $('range-holidays').checked = false;
+  $('range').hidden = false;
+  updateRangePreview();
+  $('range').scrollIntoView({ block: 'nearest' });
+  $('range-client').focus();
+});
+
+$('range-client').addEventListener('change', () => {
+  fillRangeProjects('');
+  updateRangePreview();
+});
+
+for (const id of ['range-project', 'range-days', 'range-note', 'range-from', 'range-to', 'range-weekends', 'range-holidays']) {
+  $(id).addEventListener('input', updateRangePreview);
+  $(id).addEventListener('change', updateRangePreview);
+}
+$('range-project').addEventListener('change', () => ($('range-project').title = $('range-project').value));
+
+$('range-cancel').addEventListener('click', () => {
+  $('range').hidden = true;
+});
+
+// The panel stays open so several ranges can be chained, for instance two half
+// days on different projects over the same week.
+$('range-submit').addEventListener('click', () => {
+  const t = rangeTemplate();
+  const range = computeRange();
+  const { dates } = range;
+  const problem = rangeProblem(t, range);
+  if (problem) return say(problem, true);
+  entries.push(...rangeEntries(t, dates));
+  persist();
+  render();
+  const elsewhere = dates.filter((d) => monthOf(d) !== currentMonth());
+  const months = [...new Set(elsewhere.map(monthOf))];
+  say(
+    `Added ${dates.length} row${dates.length > 1 ? 's' : ''}, ${dayLabel(dates[0])} to ${dayLabel(dates.at(-1))}.` +
+      (elsewhere.length ? ` ${elsewhere.length} of them in ${months.join(', ')}.` : '')
+  );
+});
+
+// ---- Public holidays ---------------------------------------------------------
+
+function holidayCell(text) {
+  const td = document.createElement('td');
+  td.textContent = text;
+  return td;
+}
+
+const fullDate = (date) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
+// Shown for the year of the displayed month, so the dates follow < and >.
+function renderHolidays() {
+  // The lists are rebuilt, so a focused rule checkbox is focused again by id:
+  // otherwise a keyboard user toggling rules is sent back to the top each time.
+  const focused = $('holidays').contains(document.activeElement) ? document.activeElement.id : '';
+  const year = Number(currentMonth().slice(0, 4));
+  $('holidays-country').textContent = COUNTRIES[holidaySettings.country].name;
+  $('holidays-year').textContent = `(${year})`;
+  const word = observedWord(holidaySettings.country);
+
+  $('holiday-rules').replaceChildren(
+    ...ruleDays(year, holidaySettings).map(({ rule, on, date, off }) => {
+      const tr = document.createElement('tr');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.id = `holiday-${rule.id}`;
+      box.checked = on;
+      box.addEventListener('change', () => saveHolidays(toggleRule(holidaySettings, rule.id, box.checked)));
+      const label = document.createElement('label');
+      label.htmlFor = box.id;
+      label.textContent = rule.label;
+      const first = document.createElement('td');
+      first.append(box, ' ', label);
+      // A weekend holiday shifted to a weekday shows the day actually off.
+      const shifted = off && off !== date ? ` (${word} ${fullDate(off)})` : '';
+      tr.append(first, holidayCell(fullDate(date) + shifted));
+      return tr;
+    })
+  );
+
+  const custom = holidaySettings.custom.map((c) => {
+    const tr = document.createElement('tr');
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'danger';
+    del.textContent = 'x';
+    del.title = 'Remove day off';
+    del.setAttribute('aria-label', 'Remove day off');
+    del.addEventListener('click', () =>
+      saveHolidays({ ...holidaySettings, custom: holidaySettings.custom.filter((x) => x.date !== c.date) })
+    );
+    const last = document.createElement('td');
+    last.append(del);
+    tr.append(holidayCell(fullDate(c.date)), holidayCell(c.label || 'Day off'), last);
+    return tr;
+  });
+  $('holiday-custom').replaceChildren(...(custom.length ? custom : [holidayRow('None yet.')]));
+  if (focused) $(focused)?.focus();
+}
+
+function holidayRow(text) {
+  const tr = document.createElement('tr');
+  tr.append(holidayCell(text));
+  return tr;
+}
+
+// The in-memory settings change before the write, so a second toggle made
+// while the first is still being stored builds on it instead of undoing it.
+async function saveHolidays(next, message) {
+  holidaySettings = normalizeHolidaySettings(next);
+  renderHolidays();
+  updateRangePreview();
+  await setHolidaySettings(holidaySettings);
+  if (message) say(message);
+}
+
+// Adding a date that is already listed replaces its label.
+$('custom-add').addEventListener('click', async () => {
+  const date = $('custom-date').value;
+  if (!date) return say('Pick the date of the day off.', true);
+  const label = $('custom-label').value.trim();
+  await saveHolidays(
+    { ...holidaySettings, custom: [...holidaySettings.custom.filter((c) => c.date !== date), { date, label }] },
+    `Day off added: ${fullDate(date)}.`
+  );
+  $('custom-date').value = '';
+  $('custom-label').value = '';
+});
+
+// Each button swaps in a country's default list. Custom days off go too: they
+// were chosen against the previous list.
+for (const btn of document.querySelectorAll('[data-holidays-reset]')) {
+  btn.addEventListener('click', () => {
+    const { name } = COUNTRIES[btn.dataset.holidaysReset];
+    if (confirm(`Replace the public holidays with the ${name} defaults and remove all custom days off?`)) {
+      saveHolidays(holidayDefaults(btn.dataset.holidaysReset), `Public holidays reset to the ${name} defaults.`);
+    }
+  });
+}
+
 // A plain anchor is enough on an extension page, so no downloads permission is
 // needed. The object URL is revoked once the click has been handled.
 function download(content, filename, type) {
@@ -420,7 +709,7 @@ function toCsv(rows) {
 
 $('export').addEventListener('click', async () => {
   download(
-    JSON.stringify({ entries, catalog }, null, 2),
+    JSON.stringify({ entries, catalog, holidays: holidaySettings }, null, 2),
     'vsa-shadow-tracking.json',
     'application/json'
   );
@@ -561,8 +850,13 @@ $('import-file').addEventListener('change', async (e) => {
       const n = catalog.reduce((s, c) => s + c.projects.length, 0);
       parts.push(`${catalog.length} clients, ${n} projects`);
     }
+    if (data.holidays && typeof data.holidays === 'object' && !Array.isArray(data.holidays)) {
+      holidaySettings = await setHolidaySettings(data.holidays);
+      parts.push('holiday settings');
+    }
     render();
-    say(parts.length ? `Imported ${parts.join(' and ')}.` : 'Nothing to import in that file.', !parts.length);
+    const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
+    say(parts.length ? `Imported ${list}.` : 'Nothing to import in that file.', !parts.length);
   } catch (err) {
     say(`Import failed: ${err.message}`, true);
   } finally {
@@ -748,7 +1042,12 @@ $('next-month').addEventListener('click', () => shiftMonth(1));
   $('month').value = todayMonth;
   entries = await loadEntries();
   catalog = (await chrome.storage.local.get('catalog')).catalog || [];
+  holidaySettings = await getHolidaySettings();
   const ready = await refreshSetup();
+  // Settings start collapsed once the extension can reach VSA. They stay open
+  // when there is something to do: no URL yet, or site access revoked, whose
+  // message is shown inside.
+  $('setup').open = !ready;
   render();
   if (!ready) return;
   if (catalog.length === 0) {

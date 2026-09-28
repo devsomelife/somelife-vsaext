@@ -50,7 +50,7 @@ td select:focus { outline: 2px solid #4a90d9; outline-offset: -2px; }
 td select:disabled { color: #999; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 
-#setup { margin-top: 20px; padding: 14px 16px; border: 1px solid var(--line, #ccc); border-radius: 6px; }
+#setup { margin-top: 20px; padding: 10px 16px; border: 1px solid var(--line, #ccc); border-radius: 6px; }
 #setup label { display: block; font-weight: 600; margin-bottom: 6px; }
 .url-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .url-row input { flex: 1 1 380px; font: inherit; padding: 6px 8px; border: 1px solid #bbb; border-radius: 4px; }
@@ -66,3 +66,21 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 /* Shown only when the clipboard cannot be written, so the block can still be
    selected and copied by hand. */
 #cra-fallback { width: 100%; box-sizing: border-box; margin-top: 10px; font: 12px ui-monospace, monospace; }
+
+/* Public holidays: collapsed by default, it is set once and rarely revisited. */
+#holidays { margin-top: 12px; padding: 10px 16px; border: 1px solid #ccc; border-radius: 6px; }
+#setup summary, #holidays summary { font-weight: 600; cursor: pointer; }
+#setup[open] summary { margin-bottom: 12px; }
+#holidays h2, #range h2 { font-size: 14px; margin: 14px 0 0; }
+#holidays .pref-row input[type="date"] { flex: none; }
+table.holiday-table { min-width: 0; width: auto; table-layout: auto; margin-top: 8px; }
+table.holiday-table td { border: 0; padding: 2px 16px 2px 0; }
+table.holiday-table td input[type="checkbox"] { width: auto; margin: 0 6px 0 0; vertical-align: middle; }
+table.holiday-table td button.danger { padding: 2px 8px; }
+
+/* Range entry, opened from the Add range button. */
+#range { margin-top: 16px; padding: 14px 16px; border: 1px solid #ccc; border-radius: 6px; }
+#range .pref-row select { flex: 1 1 220px; min-width: 0; }
+#range .pref-row input[type="date"], #range #range-days { flex: none; }
+#range #range-days { width: 80px; text-align: right; }
+#range .pref-row input[type="checkbox"] + label { margin-right: 14px; }

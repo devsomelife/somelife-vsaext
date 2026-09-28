@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCraUrl, getNotesToVsa, setNotesToVsa } from '../src/shared/config.js';
+import { normalizeCraUrl, getNotesToVsa, setNotesToVsa, getHolidaySettings, setHolidaySettings } from '../src/shared/config.js';
 
 test('keeps the sharing link whole, query included', () => {
   const link = 'https://contoso.sharepoint.com/:x:/r/sites/Team/Documents%20partages/General/CRA-Equipe.xlsx?d=w153&csf=1&web=1&e=AbC123';
@@ -32,4 +32,24 @@ test('sending notes to VSA is off unless explicitly enabled', async () => {
   assert.equal(await getNotesToVsa(), true);
   await setNotesToVsa('yes');
   assert.equal(await getNotesToVsa(), false);
+});
+
+test('holiday settings default to the French rules and round trip cleaned', async () => {
+  const store = {};
+  globalThis.chrome = {
+    storage: {
+      local: {
+        get: async (k) => (k in store ? { [k]: store[k] } : {}),
+        set: async (o) => Object.assign(store, o),
+      },
+    },
+  };
+  assert.deepEqual(await getHolidaySettings(), { country: 'fr', disabled: [], enabled: [], custom: [] });
+  await setHolidaySettings({ disabled: ['whit-monday', 'bogus'], custom: [{ date: '2026-05-15', label: 'Pont' }] });
+  assert.deepEqual(await getHolidaySettings(), {
+    country: 'fr',
+    disabled: ['whit-monday'],
+    enabled: [],
+    custom: [{ date: '2026-05-15', label: 'Pont' }],
+  });
 });
