@@ -1,0 +1,995 @@
+{
+  "extName": {
+    "message": "VSA Ext"
+  },
+  "extDescription": {
+    "message": "Listes déroulantes lisibles et saisie parallèle pour les feuilles de temps VSA."
+  },
+  "locale": {
+    "message": "fr"
+  },
+  "pageTitle": {
+    "message": "Saisie parallèle"
+  },
+  "monthLabel": {
+    "message": "Mois"
+  },
+  "prevMonth": {
+    "message": "Mois précédent"
+  },
+  "nextMonth": {
+    "message": "Mois suivant"
+  },
+  "settings": {
+    "message": "Réglages"
+  },
+  "timesheetUrl": {
+    "message": "Adresse de la page de saisie VSA"
+  },
+  "timesheetUrlPlaceholder": {
+    "message": "https://votre-societe.vsactivity.com/o_services/timesheetspivot/"
+  },
+  "saveUrl": {
+    "message": "Enregistrer et autoriser l'accès"
+  },
+  "open": {
+    "message": "Ouvrir"
+  },
+  "vsaLanguage": {
+    "message": "Langue de VSA"
+  },
+  "languageAuto": {
+    "message": "Détecter automatiquement"
+  },
+  "notesToVsa": {
+    "message": "Envoyer les notes à VSA en commentaires du jour"
+  },
+  "craSheet": {
+    "message": "Onglet du CRA"
+  },
+  "craSheetPlaceholder": {
+    "message": "Prénom NOM (facultatif)"
+  },
+  "craUrl": {
+    "message": "Adresse du classeur CRA"
+  },
+  "craUrlPlaceholder": {
+    "message": "https://…sharepoint.com/… (facultatif)"
+  },
+  "holidaysTitle": {
+    "message": "Jours fériés :"
+  },
+  "holidaysHint": {
+    "message": "Les jours cochés ici sont écartés d'une plage, sauf si vous incluez les jours fériés. Les boutons ci-dessous basculent sur la liste de la France, du Royaume-Uni ou des États-Unis."
+  },
+  "customDaysOff": {
+    "message": "Jours chômés personnalisés"
+  },
+  "customDate": {
+    "message": "Date du jour chômé"
+  },
+  "customLabel": {
+    "message": "Libellé du jour chômé"
+  },
+  "customLabelPlaceholder": {
+    "message": "Libellé (facultatif)"
+  },
+  "add": {
+    "message": "Ajouter"
+  },
+  "resetHolidays_fr": {
+    "message": "Rétablir la liste France"
+  },
+  "resetHolidays_uk": {
+    "message": "Rétablir la liste Royaume-Uni"
+  },
+  "resetHolidays_us": {
+    "message": "Rétablir la liste États-Unis"
+  },
+  "country_fr": {
+    "message": "France"
+  },
+  "country_uk": {
+    "message": "Royaume-Uni"
+  },
+  "country_us": {
+    "message": "États-Unis"
+  },
+  "observed_substitute": {
+    "message": "report"
+  },
+  "observed_nearest": {
+    "message": "chômé"
+  },
+  "dayOff": {
+    "message": "Jour chômé"
+  },
+  "removeDayOff": {
+    "message": "Retirer ce jour chômé"
+  },
+  "noneYet": {
+    "message": "Aucun pour l'instant."
+  },
+  "pickDayOffDate": {
+    "message": "Choisissez la date du jour chômé."
+  },
+  "dayOffAdded": {
+    "message": "Jour chômé ajouté : $DATE$.",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      }
+    }
+  },
+  "confirmHolidaysReset": {
+    "message": "Remplacer les jours fériés par la liste par défaut ($COUNTRY$) et supprimer tous les jours chômés personnalisés ?",
+    "placeholders": {
+      "country": {
+        "content": "$1"
+      }
+    }
+  },
+  "holidaysReset": {
+    "message": "Jours fériés rétablis sur la liste par défaut ($COUNTRY$).",
+    "placeholders": {
+      "country": {
+        "content": "$1"
+      }
+    }
+  },
+  "colDate": {
+    "message": "Date"
+  },
+  "colClient": {
+    "message": "Client"
+  },
+  "colProject": {
+    "message": "Projet"
+  },
+  "colDays": {
+    "message": "Jours"
+  },
+  "colNote": {
+    "message": "Note"
+  },
+  "total": {
+    "message": "Total"
+  },
+  "totalOf": {
+    "message": "Total : $PARTS$",
+    "placeholders": {
+      "parts": {
+        "content": "$1"
+      }
+    }
+  },
+  "completeDays_one": {
+    "message": "$COUNT$ jour complet",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "completeDays_other": {
+    "message": "$COUNT$ jours complets",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "partialDays_one": {
+    "message": "$COUNT$ partiel",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "partialDays_other": {
+    "message": "$COUNT$ partiels",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overDays_one": {
+    "message": "$COUNT$ en trop",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "overDays_other": {
+    "message": "$COUNT$ en trop",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rowsReady_one": {
+    "message": "$READY$/$COUNT$ ligne prête à reporter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "ready": {
+        "content": "$2"
+      }
+    }
+  },
+  "rowsReady_other": {
+    "message": "$READY$/$COUNT$ lignes prêtes à reporter",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "ready": {
+        "content": "$2"
+      }
+    }
+  },
+  "dayComplete": {
+    "message": "complet"
+  },
+  "dayMissing": {
+    "message": "il manque $DAYS$",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "dayOver": {
+    "message": "$DAYS$ en trop",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "clientPlaceholder": {
+    "message": "Client..."
+  },
+  "projectPlaceholder": {
+    "message": "Projet..."
+  },
+  "noProject": {
+    "message": "Aucun projet"
+  },
+  "internalActivities": {
+    "message": "Activités internes"
+  },
+  "notInCatalog": {
+    "message": "$LABEL$ (absent du catalogue)",
+    "placeholders": {
+      "label": {
+        "content": "$1"
+      }
+    }
+  },
+  "deleteLine": {
+    "message": "Supprimer la ligne"
+  },
+  "rowMoved": {
+    "message": "Ligne déplacée en $MONTH$.",
+    "placeholders": {
+      "month": {
+        "content": "$1"
+      }
+    }
+  },
+  "addRow": {
+    "message": "Ajouter une ligne"
+  },
+  "addRange": {
+    "message": "Saisir une plage"
+  },
+  "exportJson": {
+    "message": "Exporter en JSON"
+  },
+  "exportCsv": {
+    "message": "Exporter en CSV"
+  },
+  "copyCra": {
+    "message": "Copier pour le CRA"
+  },
+  "copyAdmin": {
+    "message": "Copier les projets pour Admin"
+  },
+  "importJson": {
+    "message": "Importer un JSON"
+  },
+  "sync": {
+    "message": "Synchroniser clients et projets depuis VSA"
+  },
+  "resetCatalog": {
+    "message": "Vider le catalogue"
+  },
+  "inject": {
+    "message": "Reporter ce mois dans VSA"
+  },
+  "craFallback": {
+    "message": "Bloc CRA à copier à la main"
+  },
+  "rangeTitle": {
+    "message": "Saisie sur une plage"
+  },
+  "rangeFrom": {
+    "message": "Du"
+  },
+  "rangeTo": {
+    "message": "Au"
+  },
+  "includeWeekends": {
+    "message": "Inclure les week-ends"
+  },
+  "includeHolidays": {
+    "message": "Inclure les jours fériés"
+  },
+  "cancel": {
+    "message": "Annuler"
+  },
+  "addRows": {
+    "message": "Ajouter les lignes"
+  },
+  "addCountRows_one": {
+    "message": "Ajouter $COUNT$ ligne",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "addCountRows_other": {
+    "message": "Ajouter $COUNT$ lignes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rangeNeedClient": {
+    "message": "Choisissez un client ou une activité interne."
+  },
+  "rangeNeedProject": {
+    "message": "Choisissez un projet."
+  },
+  "rangeBadDays": {
+    "message": "Les jours doivent être supérieurs à 0 et au plus égaux à 1."
+  },
+  "rangeNeedDates": {
+    "message": "Choisissez une date de début et une date de fin."
+  },
+  "rangeInverted": {
+    "message": "La date de fin doit être égale ou postérieure à la date de début."
+  },
+  "rangeTooLong": {
+    "message": "Cette plage couvre $SPAN$ jours ; une plage est limitée à $MAX$.",
+    "placeholders": {
+      "span": {
+        "content": "$1"
+      },
+      "max": {
+        "content": "$2"
+      }
+    }
+  },
+  "rangeEmpty": {
+    "message": "Aucun jour ne reste dans cette plage une fois les week-ends et les jours fériés écartés."
+  },
+  "rangeRows_one": {
+    "message": "$COUNT$ ligne : $DAYS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "rangeRows_other": {
+    "message": "$COUNT$ lignes : $DAYS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "rangeOver_one": {
+    "message": "$COUNT$ jour dépasserait 1 : $DAYS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "rangeOver_other": {
+    "message": "$COUNT$ jours dépasseraient 1 : $DAYS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "days": {
+        "content": "$2"
+      }
+    }
+  },
+  "weekendDays_one": {
+    "message": "$COUNT$ jour de week-end",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "weekendDays_other": {
+    "message": "$COUNT$ jours de week-end",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "rangeSkipped": {
+    "message": "Écartés : $DAYS$.",
+    "placeholders": {
+      "days": {
+        "content": "$1"
+      }
+    }
+  },
+  "rangeAdded_one": {
+    "message": "$COUNT$ ligne ajoutée, du $FIRST$ au $LAST$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "first": {
+        "content": "$2"
+      },
+      "last": {
+        "content": "$3"
+      }
+    }
+  },
+  "rangeAdded_other": {
+    "message": "$COUNT$ lignes ajoutées, du $FIRST$ au $LAST$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "first": {
+        "content": "$2"
+      },
+      "last": {
+        "content": "$3"
+      }
+    }
+  },
+  "rangeElsewhere": {
+    "message": "Dont $COUNT$ en $MONTHS$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "months": {
+        "content": "$2"
+      }
+    }
+  },
+  "nothingToExport": {
+    "message": "Rien à exporter pour ce mois."
+  },
+  "exported_one": {
+    "message": "$COUNT$ ligne exportée pour $MONTH$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      }
+    }
+  },
+  "exported_other": {
+    "message": "$COUNT$ lignes exportées pour $MONTH$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      }
+    }
+  },
+  "craProblem": {
+    "message": "$DATE$ $PROJECT$ : $DAYS$ jour(s) font $HOURS$ h, pas un nombre entier d'heures",
+    "placeholders": {
+      "date": {
+        "content": "$1"
+      },
+      "project": {
+        "content": "$2"
+      },
+      "days": {
+        "content": "$3"
+      },
+      "hours": {
+        "content": "$4"
+      }
+    }
+  },
+  "cannotCopy": {
+    "message": "Copie impossible : $PROBLEMS$. Les jours doivent être des multiples de 0,125.",
+    "placeholders": {
+      "problems": {
+        "content": "$1"
+      }
+    }
+  },
+  "nothingCompleteToCopy": {
+    "message": "Rien de complet à copier : chaque ligne doit avoir un projet (ou une activité interne) et des jours."
+  },
+  "craCopied_one": {
+    "message": "$COUNT$ ligne copiée pour $MONTH$ ($HOURS$ h).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      },
+      "hours": {
+        "content": "$3"
+      }
+    }
+  },
+  "craCopied_other": {
+    "message": "$COUNT$ lignes copiées pour $MONTH$ ($HOURS$ h).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      },
+      "hours": {
+        "content": "$3"
+      }
+    }
+  },
+  "incompleteSkipped_one": {
+    "message": "$COUNT$ ligne incomplète ignorée.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "incompleteSkipped_other": {
+    "message": "$COUNT$ lignes incomplètes ignorées.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "craPasteHint": {
+    "message": "Dans le classeur CRA, sur votre onglet : cliquez sur la cellule I23, collez, puis cliquez sur « Importer VSA Ext »."
+  },
+  "craClipboardFailed": {
+    "message": "Accès au presse-papiers refusé : le bloc est affiché ci-dessous. Copiez-le à la main (Ctrl+C), puis collez-le dans la cellule I23 de votre onglet du CRA."
+  },
+  "adminNothingInternal": {
+    "message": "Rien à copier : les activités internes ne sont pas des projets Admin."
+  },
+  "adminNothing": {
+    "message": "Rien à copier : chaque ligne doit avoir un projet et des jours."
+  },
+  "adminCopied_one": {
+    "message": "$COUNT$ projet copié pour $MONTH$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      }
+    }
+  },
+  "adminCopied_other": {
+    "message": "$COUNT$ projets copiés pour $MONTH$.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      },
+      "month": {
+        "content": "$2"
+      }
+    }
+  },
+  "internalLeftOut_one": {
+    "message": "$COUNT$ ligne d'activité interne écartée.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "internalLeftOut_other": {
+    "message": "$COUNT$ lignes d'activité interne écartées.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "adminPasteHint": {
+    "message": "Envoyez-les à la personne qui tient le classeur CRA, ou collez-les dans la première ligne vide du tableau des projets de l'onglet Admin."
+  },
+  "adminClipboardFailed": {
+    "message": "Accès au presse-papiers refusé : les lignes sont affichées ci-dessous. Copiez-les à la main (Ctrl+C)."
+  },
+  "saveUrlFirst": {
+    "message": "Enregistrez d'abord une adresse"
+  },
+  "craTabSaved": {
+    "message": "Nom de l'onglet CRA enregistré."
+  },
+  "craLinkSaved": {
+    "message": "Lien du classeur CRA enregistré."
+  },
+  "craLinkCleared": {
+    "message": "Lien du classeur CRA effacé."
+  },
+  "urlInvalid": {
+    "message": "Cela ne ressemble pas à une adresse. Collez l'adresse complète, https:// compris."
+  },
+  "urlNotHttp": {
+    "message": "L'adresse doit commencer par http ou https"
+  },
+  "enterUrl": {
+    "message": "Saisissez l'adresse de votre page de saisie VSA."
+  },
+  "accessDenied": {
+    "message": "Accès refusé. L'extension ne peut pas atteindre ce site sans cette autorisation."
+  },
+  "activationFailed": {
+    "message": "Enregistré, mais l'activation a échoué : $REASON$",
+    "placeholders": {
+      "reason": {
+        "content": "$1"
+      }
+    }
+  },
+  "savedOpenAndSync": {
+    "message": "Enregistré. Ouvrez votre page de saisie VSA et synchronisez."
+  },
+  "pasteUrlToBegin": {
+    "message": "Collez l'adresse de votre page de saisie VSA pour commencer."
+  },
+  "accessRevoked": {
+    "message": "L'accès à ce site a été retiré. Enregistrez de nouveau pour le rétablir."
+  },
+  "languageSaved": {
+    "message": "Préférence de langue enregistrée."
+  },
+  "notesOn": {
+    "message": "Les notes seront inscrites en commentaires du jour dans VSA au prochain report."
+  },
+  "notesOff": {
+    "message": "Les notes ne seront plus envoyées à VSA."
+  },
+  "importedEntries_one": {
+    "message": "$COUNT$ ligne",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importedEntries_other": {
+    "message": "$COUNT$ lignes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "importedHolidays": {
+    "message": "les jours fériés"
+  },
+  "listAnd": {
+    "message": "$FIRST$ et $LAST$",
+    "placeholders": {
+      "first": {
+        "content": "$1"
+      },
+      "last": {
+        "content": "$2"
+      }
+    }
+  },
+  "imported": {
+    "message": "Importé : $LIST$.",
+    "placeholders": {
+      "list": {
+        "content": "$1"
+      }
+    }
+  },
+  "nothingToImport": {
+    "message": "Rien à importer dans ce fichier."
+  },
+  "importFailed": {
+    "message": "Échec de l'import : $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogClients_one": {
+    "message": "$COUNT$ client",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogClients_other": {
+    "message": "$COUNT$ clients",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogProjects_one": {
+    "message": "$COUNT$ projet",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogProjects_other": {
+    "message": "$COUNT$ projets",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogInternal_one": {
+    "message": "$COUNT$ activité interne",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogInternal_other": {
+    "message": "$COUNT$ activités internes",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogLoaded": {
+    "message": "Catalogue chargé : $SUMMARY$.",
+    "placeholders": {
+      "summary": {
+        "content": "$1"
+      }
+    }
+  },
+  "catalogCleared": {
+    "message": "Catalogue vidé. Lancez une synchronisation pour le reconstruire."
+  },
+  "catalogAlreadyEmpty": {
+    "message": "Le catalogue est déjà vide."
+  },
+  "confirmResetCatalog_one": {
+    "message": "Supprimer $COUNT$ client et ses projets ?\n\nLes lignes saisies ne sont pas touchées.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "confirmResetCatalog_other": {
+    "message": "Supprimer les $COUNT$ clients et leurs projets ?\n\nLes lignes saisies ne sont pas touchées.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "startSync": {
+    "message": "Ouvrez la page de saisie VSA, puis synchronisez clients et projets pour commencer."
+  },
+  "setUrlFirst": {
+    "message": "Indiquez d'abord l'adresse de votre page de saisie VSA."
+  },
+  "openVsaFirst": {
+    "message": "Ouvrez d'abord la page de saisie VSA, puis réessayez."
+  },
+  "cannotReachVsa": {
+    "message": "Impossible de joindre la page VSA ($ERROR$). Rechargez l'onglet VSA et réessayez.",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "noResponse": {
+    "message": "pas de réponse"
+  },
+  "syncing": {
+    "message": "Synchronisation du catalogue depuis VSA, client par client..."
+  },
+  "syncProgress": {
+    "message": "Synchronisation $INDEX$/$TOTAL$ : $CLIENT$",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "client": {
+        "content": "$3"
+      }
+    }
+  },
+  "catalogSynced": {
+    "message": "Catalogue synchronisé : $SUMMARY$.",
+    "placeholders": {
+      "summary": {
+        "content": "$1"
+      }
+    }
+  },
+  "staleKept_one": {
+    "message": "$COUNT$ conservé depuis une synchronisation précédente (lecture en échec cette fois).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "staleKept_other": {
+    "message": "$COUNT$ conservés depuis une synchronisation précédente (lecture en échec cette fois).",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "syncFailed": {
+    "message": "Échec de la synchronisation : $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  },
+  "nothingToInject": {
+    "message": "Rien de complet à reporter : chaque ligne doit avoir un projet (ou une activité interne) et des jours."
+  },
+  "injecting_one": {
+    "message": "Report de $COUNT$ ligne...",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "injecting_other": {
+    "message": "Report de $COUNT$ lignes...",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "injectStructure": {
+    "message": "Étape 1/2, préparation des lignes $INDEX$/$TOTAL$ : $CLIENT$",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "client": {
+        "content": "$3"
+      }
+    }
+  },
+  "injectDays": {
+    "message": "Étape 2/2, saisie des journées $INDEX$/$TOTAL$ : $CLIENT$",
+    "placeholders": {
+      "index": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "client": {
+        "content": "$3"
+      }
+    }
+  },
+  "injectPartial": {
+    "message": "$PREPARED$/$TOTAL$ lignes préparées. En échec : $FAILURES$. Aucune journée n'a été inscrite sur ces lignes.",
+    "placeholders": {
+      "prepared": {
+        "content": "$1"
+      },
+      "total": {
+        "content": "$2"
+      },
+      "failures": {
+        "content": "$3"
+      }
+    }
+  },
+  "injected_one": {
+    "message": "$COUNT$ ligne reportée.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "injected_other": {
+    "message": "$COUNT$ lignes reportées.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "commentsWritten_one": {
+    "message": "$COUNT$ commentaire du jour inscrit.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "commentsWritten_other": {
+    "message": "$COUNT$ commentaires du jour inscrits.",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "reviewAndSave": {
+    "message": "Vérifiez la grille, puis cliquez sur Save dans VSA."
+  },
+  "injectFailed": {
+    "message": "Échec du report : $ERROR$",
+    "placeholders": {
+      "error": {
+        "content": "$1"
+      }
+    }
+  }
+}

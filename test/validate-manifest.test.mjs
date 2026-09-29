@@ -21,13 +21,14 @@ const FILES = {
   'icons/icon16.png': '',
   'icons/icon48.png': '',
   'icons/icon128.png': '',
+  '_locales/en/messages.json': readFileSync(new URL('../_locales/en/messages.json', import.meta.url), 'utf8'),
 };
 
 // Runs the validator on a throwaway package folder holding `manifest`.
-function validate(target, manifest) {
+function validate(target, manifest, files = FILES) {
   const dir = mkdtempSync(join(tmpdir(), 'vsa-manifest-'));
   try {
-    for (const [rel, body] of Object.entries(FILES)) {
+    for (const [rel, body] of Object.entries(files)) {
       mkdirSync(dirname(join(dir, rel)), { recursive: true });
       writeFileSync(join(dir, rel), body);
     }
@@ -87,4 +88,33 @@ test('a missing background script is reported', () => {
   const r = validate('firefox', bad);
   assert.equal(r.ok, false);
   assert.match(r.out, /background\.scripts: missing src\/missing\.js/);
+});
+
+test('the manifest name is resolved from the default locale', () => {
+  assert.equal(chrome.name, '__MSG_extName__');
+  assert.equal(chrome.default_locale, 'en');
+});
+
+test('a missing default locale file is reported', () => {
+  const { '_locales/en/messages.json': _, ...rest } = FILES;
+  const r = validate('chrome', chrome, rest);
+  assert.equal(r.ok, false);
+  assert.match(r.out, /default_locale: missing _locales\/en\/messages\.json/);
+});
+
+test('a manifest message missing from the default locale is reported', () => {
+  const bad = structuredClone(chrome);
+  bad.action.default_title = '__MSG_noSuchKey__';
+  const r = validate('chrome', bad);
+  assert.equal(r.ok, false);
+  assert.match(r.out, /action\.default_title uses __MSG_noSuchKey__/);
+});
+
+test('locales without a default_locale are reported', () => {
+  const bad = structuredClone(chrome);
+  delete bad.default_locale;
+  const r = validate('chrome', bad);
+  assert.equal(r.ok, false);
+  assert.match(r.out, /_locales is present, so default_locale must be set/);
+  assert.match(r.out, /name uses __MSG_extName__ but default_locale is not set/);
 });

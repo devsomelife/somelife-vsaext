@@ -106,6 +106,45 @@ if (manifest.options_page && has(manifest.options_page)) {
   }
 }
 
+// Localized strings. Chrome refuses to load an extension with _locales but no
+// default_locale, and both browsers show a __MSG_x__ that does not resolve as
+// the raw text, so every one used in the manifest must be in the default locale.
+const localesDir = has('_locales') || has('_locales/');
+let messages = new Map();
+if (manifest.default_locale) {
+  const path = `_locales/${manifest.default_locale}/messages.json`;
+  if (!has(path)) {
+    errors.push(`default_locale: missing ${path}`);
+  } else {
+    try {
+      const parsed = JSON.parse(read(path));
+      messages = new Map(Object.entries(parsed).map(([key, value]) => [key.toLowerCase(), value?.message]));
+    } catch (err) {
+      errors.push(`${path} is not valid JSON: ${err.message}`);
+    }
+  }
+} else if (localesDir) {
+  errors.push('_locales is present, so default_locale must be set');
+}
+
+function* strings(value, path) {
+  if (typeof value === 'string') yield [path, value];
+  else if (value && typeof value === 'object') {
+    for (const [key, child] of Object.entries(value)) yield* strings(child, path ? `${path}.${key}` : key);
+  }
+}
+
+const MSG = /__MSG_(\w+)__/g;
+for (const [path, value] of strings(manifest, '')) {
+  for (const [ref, key] of value.matchAll(MSG)) {
+    if (!manifest.default_locale) errors.push(`${path} uses ${ref} but default_locale is not set`);
+    else if (messages.size && !messages.has(key.toLowerCase())) {
+      errors.push(`${path} uses ${ref}, which is not in _locales/${manifest.default_locale}/messages.json`);
+    }
+  }
+}
+const localized = (value) => String(value ?? '').replace(MSG, (ref, key) => messages.get(key.toLowerCase()) ?? ref);
+
 // ---- Target rules ------------------------------------------------------------
 
 if (target === 'chrome') {
@@ -154,4 +193,4 @@ if (errors.length) {
   process.exit(1);
 }
 const kind = background.service_worker ? 'service worker' : background.scripts ? 'background scripts' : 'no background';
-console.log(`OK (${where}, ${target}): ${manifest.name} ${manifest.version}, manifest v3, ${kind}`);
+console.log(`OK (${where}, ${target}): ${localized(manifest.name)} ${manifest.version}, manifest v3, ${kind}`);

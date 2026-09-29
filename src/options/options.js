@@ -8,13 +8,13 @@ import {
   normalizeUrl,
   matchPatternFor,
   originPatternFor,
-  describeUrlError,
   getCraSheetName,
   setCraSheetName,
   getCraUrl,
   setCraUrl,
   getHolidaySettings,
   setHolidaySettings,
+  URL_NOT_HTTP,
 } from '../shared/config.js';
 import {
   loadEntries,
@@ -30,7 +30,6 @@ import {
   rangeEntries,
 } from '../shared/store.js';
 import {
-  COUNTRIES,
   DEFAULT_HOLIDAY_SETTINGS,
   addDays,
   holidayDefaults,
@@ -42,6 +41,7 @@ import {
   toggleRule,
 } from '../shared/holidays.js';
 import { buildCraPayload, serializeCraPayload, buildAdminRows, serializeAdminRows } from '../shared/cra.js';
+import { t, tn, formatNumber, localizePage } from '../shared/i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const rowsEl = $('rows');
@@ -64,6 +64,24 @@ const todayMonth = (() => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 })();
+
+// The holiday words that end up in the range preview and the holidays panel.
+const HOLIDAY_WORDS = {
+  dayOff: t('dayOff'),
+  substitute: t('observed_substitute'),
+  nearest: t('observed_nearest'),
+};
+
+const countryName = (code) => t(`country_${code}`);
+
+// Sentences built from optional parts, each already punctuated.
+const sentences = (...parts) => parts.filter(Boolean).join(' ');
+
+// A pasted value that is not a URL at all throws a TypeError from new URL().
+function describeUrlError(err) {
+  if (err instanceof TypeError) return t('urlInvalid');
+  return err.message === URL_NOT_HTTP ? t('urlNotHttp') : err.message;
+}
 
 function say(msg, isError) {
   statusEl.textContent = msg;
@@ -101,7 +119,7 @@ function optionsHtml(values, selected, placeholder, groups = []) {
   const known = values.includes(selected) || groups.some((g) => g.values.includes(selected));
   const opts = [`<option value="">${esc(placeholder)}</option>`];
   if (selected && !known) {
-    opts.push(`<option value="${esc(selected)}" selected>${esc(selected)} (not in catalog)</option>`);
+    opts.push(`<option value="${esc(selected)}" selected>${esc(t('notInCatalog', selected))}</option>`);
   }
   opts.push(...values.map(option));
   for (const g of groups) {
@@ -119,7 +137,7 @@ function isInternal(label) {
 function clientOptionsHtml(selected) {
   const clients = catalog.filter((c) => !c.internal).map((c) => c.label);
   const internal = catalog.filter((c) => c.internal).map((c) => c.label);
-  return optionsHtml(clients, selected, 'Client...', [{ label: 'Internal activities', values: internal }]);
+  return optionsHtml(clients, selected, t('clientPlaceholder'), [{ label: t('internalActivities'), values: internal }]);
 }
 
 // Merging never deletes, so a client removed in VSA would linger forever.
@@ -128,7 +146,7 @@ async function resetCatalog() {
   catalog = [];
   await saveCatalog();
   render();
-  say('Catalog cleared. Run a sync to rebuild it.');
+  say(t('catalogCleared'));
 }
 
 // Projects are scoped to the selected client. With no client chosen there is
@@ -142,7 +160,11 @@ function describeCatalog() {
   const clients = catalog.filter((c) => !c.internal);
   const internal = catalog.length - clients.length;
   const n = clients.reduce((s, c) => s + c.projects.length, 0);
-  return `${clients.length} clients, ${n} projects` + (internal ? `, ${internal} internal activities` : '');
+  return [
+    tn('catalogClients', clients.length),
+    tn('catalogProjects', n),
+    ...(internal ? [tn('catalogInternal', internal)] : []),
+  ].join(', ');
 }
 
 function projectsFor(clientLabel) {
@@ -152,7 +174,7 @@ function projectsFor(clientLabel) {
 
 // An internal activity takes no project, which the placeholder says.
 function projectPlaceholder(client) {
-  return isInternal(client) ? 'No project' : 'Project...';
+  return isInternal(client) ? t('noProject') : t('projectPlaceholder');
 }
 
 function fillProjects(tr, client) {
@@ -171,7 +193,10 @@ function rowTemplate(e) {
     <td><select data-f="project"></select></td>
     <td class="days"><input data-f="days" type="number" step="0.125" min="0" max="1"></td>
     <td><input data-f="note"></td>
-    <td><button type="button" class="danger" data-act="del" title="Delete line" aria-label="Delete line">x</button></td>`;
+    <td><button type="button" class="danger" data-act="del">x</button></td>`;
+  const del = tr.querySelector('[data-act="del"]');
+  del.title = t('deleteLine');
+  del.setAttribute('aria-label', t('deleteLine'));
 
   const clientSel = tr.querySelector('[data-f="client"]');
   clientSel.innerHTML = clientOptionsHtml(e.client || '');
@@ -220,13 +245,13 @@ function rowTemplate(e) {
     if (field === 'date') {
       el.addEventListener('change', () => {
         if (!el.value) return;
-        if (monthOf(el.value) !== currentMonth()) say(`Row moved to ${monthOf(el.value)}.`);
+        if (monthOf(el.value) !== currentMonth()) say(t('rowMoved', monthOf(el.value)));
         render();
       });
     }
   }
 
-  tr.querySelector('[data-act="del"]').addEventListener('click', () => {
+  del.addEventListener('click', () => {
     entries.splice(entries.indexOf(e), 1);
     persist();
     render();
@@ -240,22 +265,20 @@ function updateTotal() {
   const days = groupByDay(shown);
   $('total-label').textContent = describeMonth(summarizeDays(days));
   refreshDayHeaders(days);
-  $('total').textContent = String(totalDays(shown));
-  $('row-count').textContent = shown.length
-    ? `${complete}/${shown.length} row(s) ready to inject`
-    : '';
+  $('total').textContent = formatDays(totalDays(shown));
+  $('row-count').textContent = shown.length ? tn('rowsReady', shown.length, complete) : '';
   // The CRA block needs no VSA configuration, only something complete to send.
   $('copy-cra').disabled = complete === 0;
   $('copy-admin').disabled = complete === 0;
   updateRangePreview();
 }
 
-const formatDays = (n) => String(Number(n.toFixed(3)));
+const formatDays = (n) => formatNumber(Number(n.toFixed(3)));
 
 const DAY_STATUS_TEXT = {
-  complete: () => 'complete',
-  partial: (total) => `missing ${formatDays(1 - total)}`,
-  over: (total) => `over by ${formatDays(total - 1)}`,
+  complete: () => t('dayComplete'),
+  partial: (total) => t('dayMissing', formatDays(1 - total)),
+  over: (total) => t('dayOver', formatDays(total - 1)),
 };
 
 function dayLabel(date) {
@@ -304,10 +327,10 @@ function refreshDayHeaders(days) {
 
 function describeMonth({ complete, partial, over }) {
   const parts = [];
-  if (complete) parts.push(`${complete} complete day${complete > 1 ? 's' : ''}`);
-  if (partial) parts.push(`${partial} partial`);
-  if (over) parts.push(`${over} over`);
-  return parts.length ? `Total: ${parts.join(', ')}` : 'Total';
+  if (complete) parts.push(tn('completeDays', complete));
+  if (partial) parts.push(tn('partialDays', partial));
+  if (over) parts.push(tn('overDays', over));
+  return parts.length ? t('totalOf', parts.join(', ')) : t('total');
 }
 
 // Entries are shown grouped by day, each group under a header row with the
@@ -371,10 +394,10 @@ const CONTENT_SCRIPTS = [
 // has granted, and sendMessage/executeScript work on that same tab.
 async function sendToVsa(message) {
   const url = await getTimesheetUrl();
-  if (!url) throw new Error('Set your VSA timesheet URL first.');
+  if (!url) throw new Error(t('setUrlFirst'));
 
   const [tab] = await chrome.tabs.query({ url: matchPatternFor(url) });
-  if (!tab) throw new Error('Open the VSA timesheet page first, then retry.');
+  if (!tab) throw new Error(t('openVsaFirst'));
 
   try {
     return await chrome.tabs.sendMessage(tab.id, message);
@@ -386,9 +409,7 @@ async function sendToVsa(message) {
     try {
       return await chrome.tabs.sendMessage(tab.id, message);
     } catch (err) {
-      throw new Error(
-        `Could not reach the VSA page (${err.message}). Reload the timesheet tab and retry.`
-      );
+      throw new Error(t('cannotReachVsa', err.message));
     }
   }
 }
@@ -458,22 +479,22 @@ function computeRange() {
   const range = rangeDates(
     $('range-from').value,
     $('range-to').value,
-    { weekends: $('range-weekends').checked, holidays: $('range-holidays').checked },
+    { weekends: $('range-weekends').checked, holidays: $('range-holidays').checked, words: HOLIDAY_WORDS },
     holidaySettings
   );
   return { ...range, span };
 }
 
-function rangeProblem(t, { dates, span }) {
+function rangeProblem(line, { dates, span }) {
   const from = $('range-from').value;
   const to = $('range-to').value;
-  if (!t.client) return 'Pick a client or an internal activity.';
-  if (!t.internal && !t.project) return 'Pick a project.';
-  if (!(t.days > 0 && t.days <= 1)) return 'Days must be more than 0 and at most 1.';
-  if (!from || !to) return 'Pick a start and an end date.';
-  if (from > to) return 'The end date must be on or after the start date.';
-  if (span > RANGE_MAX_DAYS) return `That spans ${span} days; a range is limited to ${RANGE_MAX_DAYS}.`;
-  if (!dates.length) return 'No day left in that range once weekends and bank holidays are left out.';
+  if (!line.client) return t('rangeNeedClient');
+  if (!line.internal && !line.project) return t('rangeNeedProject');
+  if (!(line.days > 0 && line.days <= 1)) return t('rangeBadDays');
+  if (!from || !to) return t('rangeNeedDates');
+  if (from > to) return t('rangeInverted');
+  if (span > RANGE_MAX_DAYS) return t('rangeTooLong', span, RANGE_MAX_DAYS);
+  if (!dates.length) return t('rangeEmpty');
   return '';
 }
 
@@ -487,13 +508,13 @@ function setHint(el, msg, color) {
 
 function updateRangePreview() {
   if ($('range').hidden) return;
-  const t = rangeTemplate();
+  const line = rangeTemplate();
   const range = computeRange();
   const { dates, skipped } = range;
-  const problem = rangeProblem(t, range);
+  const problem = rangeProblem(line, range);
   const submit = $('range-submit');
   submit.disabled = Boolean(problem);
-  submit.textContent = problem ? 'Add rows' : `Add ${dates.length} row${dates.length > 1 ? 's' : ''}`;
+  submit.textContent = problem ? t('addRows') : tn('addCountRows', dates.length);
 
   if (problem) {
     setHint($('range-preview'), problem, '#c33');
@@ -501,19 +522,21 @@ function updateRangePreview() {
     // Warned, not refused: a day can legitimately be over while the user is
     // still moving time around.
     const totals = new Map(groupByDay(entries).map((d) => [d.date, d.total]));
-    const over = dates.filter((d) => (totals.get(d) ?? 0) + t.days > 1 + 1e-9);
+    const over = dates.filter((d) => (totals.get(d) ?? 0) + line.days > 1 + 1e-9);
     setHint(
       $('range-preview'),
-      `${dates.length} row${dates.length > 1 ? 's' : ''}: ${listDays(dates)}.` +
-        (over.length ? ` ${over.length} day(s) would go over 1: ${listDays(over)}.` : ''),
+      sentences(
+        tn('rangeRows', dates.length, listDays(dates)),
+        over.length && tn('rangeOver', over.length, listDays(over))
+      ),
       over.length ? '#c60' : ''
     );
   }
 
   const weekends = skipped.filter((s) => s.reason === 'weekend').length;
   const holidays = skipped.filter((s) => s.reason !== 'weekend').map((s) => `${dayLabel(s.date)} ${s.reason}`);
-  const parts = [...(weekends ? [`${weekends} weekend day${weekends > 1 ? 's' : ''}`] : []), ...holidays];
-  setHint($('range-skipped'), parts.length ? `Skipped: ${parts.join('; ')}.` : '');
+  const parts = [...(weekends ? [tn('weekendDays', weekends)] : []), ...holidays];
+  setHint($('range-skipped'), parts.length ? t('rangeSkipped', parts.join('; ')) : '');
 }
 
 // Prefilled like Add row: the last row's client, project and days, starting the
@@ -553,19 +576,21 @@ $('range-cancel').addEventListener('click', () => {
 // The panel stays open so several ranges can be chained, for instance two half
 // days on different projects over the same week.
 $('range-submit').addEventListener('click', () => {
-  const t = rangeTemplate();
+  const line = rangeTemplate();
   const range = computeRange();
   const { dates } = range;
-  const problem = rangeProblem(t, range);
+  const problem = rangeProblem(line, range);
   if (problem) return say(problem, true);
-  entries.push(...rangeEntries(t, dates));
+  entries.push(...rangeEntries(line, dates));
   persist();
   render();
   const elsewhere = dates.filter((d) => monthOf(d) !== currentMonth());
   const months = [...new Set(elsewhere.map(monthOf))];
   say(
-    `Added ${dates.length} row${dates.length > 1 ? 's' : ''}, ${dayLabel(dates[0])} to ${dayLabel(dates.at(-1))}.` +
-      (elsewhere.length ? ` ${elsewhere.length} of them in ${months.join(', ')}.` : '')
+    sentences(
+      tn('rangeAdded', dates.length, dayLabel(dates[0]), dayLabel(dates.at(-1))),
+      elsewhere.length && t('rangeElsewhere', elsewhere.length, months.join(', '))
+    )
   );
 });
 
@@ -593,9 +618,9 @@ function renderHolidays() {
   // otherwise a keyboard user toggling rules is sent back to the top each time.
   const focused = $('holidays').contains(document.activeElement) ? document.activeElement.id : '';
   const year = Number(currentMonth().slice(0, 4));
-  $('holidays-country').textContent = COUNTRIES[holidaySettings.country].name;
+  $('holidays-country').textContent = countryName(holidaySettings.country);
   $('holidays-year').textContent = `(${year})`;
-  const word = observedWord(holidaySettings.country);
+  const word = observedWord(holidaySettings.country, HOLIDAY_WORDS);
 
   $('holiday-rules').replaceChildren(
     ...ruleDays(year, holidaySettings).map(({ rule, on, date, off }) => {
@@ -623,17 +648,17 @@ function renderHolidays() {
     del.type = 'button';
     del.className = 'danger';
     del.textContent = 'x';
-    del.title = 'Remove day off';
-    del.setAttribute('aria-label', 'Remove day off');
+    del.title = t('removeDayOff');
+    del.setAttribute('aria-label', t('removeDayOff'));
     del.addEventListener('click', () =>
       saveHolidays({ ...holidaySettings, custom: holidaySettings.custom.filter((x) => x.date !== c.date) })
     );
     const last = document.createElement('td');
     last.append(del);
-    tr.append(holidayCell(fullDate(c.date)), holidayCell(c.label || 'Day off'), last);
+    tr.append(holidayCell(fullDate(c.date)), holidayCell(c.label || HOLIDAY_WORDS.dayOff), last);
     return tr;
   });
-  $('holiday-custom').replaceChildren(...(custom.length ? custom : [holidayRow('None yet.')]));
+  $('holiday-custom').replaceChildren(...(custom.length ? custom : [holidayRow(t('noneYet'))]));
   if (focused) $(focused)?.focus();
 }
 
@@ -656,11 +681,11 @@ async function saveHolidays(next, message) {
 // Adding a date that is already listed replaces its label.
 $('custom-add').addEventListener('click', async () => {
   const date = $('custom-date').value;
-  if (!date) return say('Pick the date of the day off.', true);
+  if (!date) return say(t('pickDayOffDate'), true);
   const label = $('custom-label').value.trim();
   await saveHolidays(
     { ...holidaySettings, custom: [...holidaySettings.custom.filter((c) => c.date !== date), { date, label }] },
-    `Day off added: ${fullDate(date)}.`
+    t('dayOffAdded', fullDate(date))
   );
   $('custom-date').value = '';
   $('custom-label').value = '';
@@ -670,9 +695,9 @@ $('custom-add').addEventListener('click', async () => {
 // were chosen against the previous list.
 for (const btn of document.querySelectorAll('[data-holidays-reset]')) {
   btn.addEventListener('click', () => {
-    const { name } = COUNTRIES[btn.dataset.holidaysReset];
-    if (confirm(`Replace the public holidays with the ${name} defaults and remove all custom days off?`)) {
-      saveHolidays(holidayDefaults(btn.dataset.holidaysReset), `Public holidays reset to the ${name} defaults.`);
+    const name = countryName(btn.dataset.holidaysReset);
+    if (confirm(t('confirmHolidaysReset', name))) {
+      saveHolidays(holidayDefaults(btn.dataset.holidaysReset), t('holidaysReset', name));
     }
   });
 }
@@ -720,9 +745,9 @@ $('export').addEventListener('click', async () => {
 $('export-csv').addEventListener('click', async () => {
   const month = currentMonth();
   const shown = entriesForMonth(entries, month);
-  if (!shown.length) return say('Nothing to export for this month.', true);
+  if (!shown.length) return say(t('nothingToExport'), true);
   download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
-  say(`Exported ${shown.length} rows for ${month}.`);
+  say(tn('exported', shown.length, month));
 });
 
 // The team CRA workbook takes the month as one line of JSON pasted into a cell
@@ -734,30 +759,28 @@ $('copy-cra').addEventListener('click', async () => {
   const person = craSheetName;
   const { payload, problems, hours, skipped } = buildCraPayload(entries, { month, person });
   if (problems.length) {
-    return say(`Cannot copy: ${problems.join('; ')}. Days must be multiples of 0.125.`, true);
+    const list = problems.map((p) => t('craProblem', p.date, p.project, formatNumber(p.days), formatNumber(p.hours)));
+    return say(t('cannotCopy', list.join('; ')), true);
   }
-  if (!payload.rows.length) {
-    return say('Nothing complete to copy: each row needs a project (or an internal activity) and days.', true);
-  }
+  if (!payload.rows.length) return say(t('nothingCompleteToCopy'), true);
   const text = serializeCraPayload(payload);
   const fallback = $('cra-fallback');
   try {
     await navigator.clipboard.writeText(text);
     fallback.hidden = true;
     say(
-      `Copied ${payload.rows.length} row(s) for ${month} (${hours} h)` +
-        (skipped ? `, ${skipped} incomplete row(s) skipped` : '') +
-        '. In the CRA workbook, on your tab: click cell I23, paste, then click "Importer VSA Ext".'
+      sentences(
+        tn('craCopied', payload.rows.length, month, formatNumber(hours)),
+        skipped && tn('incompleteSkipped', skipped),
+        t('craPasteHint')
+      )
     );
   } catch {
     fallback.value = text;
     fallback.hidden = false;
     fallback.focus();
     fallback.select();
-    say(
-      'Clipboard access failed: the block is shown below. Copy it by hand (Ctrl+C), then paste it in cell I23 of your CRA tab.',
-      true
-    );
+    say(t('craClipboardFailed'), true);
   }
 });
 
@@ -768,12 +791,7 @@ $('copy-admin').addEventListener('click', async () => {
   const month = currentMonth();
   const { rows, skipped, internal } = buildAdminRows(entries, { month });
   if (!rows.length) {
-    return say(
-      internal
-        ? 'Nothing to copy: internal activities are not Admin projects.'
-        : 'Nothing to copy: each row needs a project and days.',
-      true
-    );
+    return say(internal ? t('adminNothingInternal') : t('adminNothing'), true);
   }
   const text = serializeAdminRows(rows);
   const fallback = $('cra-fallback');
@@ -781,17 +799,19 @@ $('copy-admin').addEventListener('click', async () => {
     await navigator.clipboard.writeText(text);
     fallback.hidden = true;
     say(
-      `Copied ${rows.length} project(s) for ${month}` +
-        (skipped ? `, ${skipped} incomplete row(s) skipped` : '') +
-        (internal ? `, ${internal} internal activity row(s) left out` : '') +
-        '. Send them to the CRA workbook owner, or paste them in the first empty row of the projects table on the Admin tab.'
+      sentences(
+        tn('adminCopied', rows.length, month),
+        skipped && tn('incompleteSkipped', skipped),
+        internal && tn('internalLeftOut', internal),
+        t('adminPasteHint')
+      )
     );
   } catch {
     fallback.value = text;
     fallback.hidden = false;
     fallback.focus();
     fallback.select();
-    say('Clipboard access failed: the rows are shown below. Copy them by hand (Ctrl+C).', true);
+    say(t('adminClipboardFailed'), true);
   }
 });
 
@@ -802,7 +822,7 @@ function setOpenButton(id, url) {
   const btn = $(id);
   btn.dataset.url = url || '';
   btn.disabled = !url;
-  btn.title = url || 'Save a URL first';
+  btn.title = url || t('saveUrlFirst');
 }
 
 for (const id of ['open-timesheet', 'cra-open']) {
@@ -815,7 +835,7 @@ for (const id of ['open-timesheet', 'cra-open']) {
 $('cra-sheet').addEventListener('change', async () => {
   craSheetName = $('cra-sheet').value.trim();
   await setCraSheetName(craSheetName);
-  setUrlStatus('CRA tab name saved.', false);
+  setUrlStatus(t('craTabSaved'), false);
 });
 
 $('cra-url').addEventListener('change', async () => {
@@ -824,7 +844,7 @@ $('cra-url').addEventListener('change', async () => {
     const url = await getCraUrl();
     $('cra-url').value = url;
     setOpenButton('cra-open', url);
-    setUrlStatus(url ? 'CRA workbook link saved.' : 'CRA workbook link cleared.', false);
+    setUrlStatus(url ? t('craLinkSaved') : t('craLinkCleared'), false);
   } catch (err) {
     setUrlStatus(describeUrlError(err), true);
   }
@@ -842,23 +862,23 @@ $('import-file').addEventListener('change', async (e) => {
     if (Array.isArray(data.entries)) {
       entries = normalize(data.entries);
       await persist();
-      parts.push(`${entries.length} entries`);
+      parts.push(tn('importedEntries', entries.length));
     }
     if (Array.isArray(data.catalog)) {
       catalog = data.catalog;
       await saveCatalog();
       const n = catalog.reduce((s, c) => s + c.projects.length, 0);
-      parts.push(`${catalog.length} clients, ${n} projects`);
+      parts.push(`${tn('catalogClients', catalog.length)}, ${tn('catalogProjects', n)}`);
     }
     if (data.holidays && typeof data.holidays === 'object' && !Array.isArray(data.holidays)) {
       holidaySettings = await setHolidaySettings(data.holidays);
-      parts.push('holiday settings');
+      parts.push(t('importedHolidays'));
     }
     render();
-    const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0];
-    say(parts.length ? `Imported ${list}.` : 'Nothing to import in that file.', !parts.length);
+    const list = parts.length > 1 ? t('listAnd', parts.slice(0, -1).join(', '), parts.at(-1)) : parts[0];
+    say(parts.length ? t('imported', list) : t('nothingToImport'), !parts.length);
   } catch (err) {
-    say(`Import failed: ${err.message}`, true);
+    say(t('importFailed', err.message), true);
   } finally {
     // Cleared so re-picking the same file fires `change` again.
     e.target.value = '';
@@ -866,20 +886,17 @@ $('import-file').addEventListener('change', async (e) => {
 });
 
 $('sync').addEventListener('click', async () => {
-  say('Syncing catalog from VSA, this walks every client...');
+  say(t('syncing'));
   try {
     const res = await sendToVsa({ type: 'catalog' });
-    if (!res?.ok) throw new Error(res?.error || 'no response');
+    if (!res?.ok) throw new Error(res?.error || t('noResponse'));
     catalog = mergeCatalog(catalog, res.catalog);
     await saveCatalog();
     render();
     const stale = catalog.filter((c) => c.stale).length;
-    say(
-      `Catalog synced: ${describeCatalog()}.` +
-        (stale ? ` ${stale} kept from a previous sync (lookup failed this time).` : '')
-    );
+    say(sentences(t('catalogSynced', describeCatalog()), stale && tn('staleKept', stale)));
   } catch (err) {
-    say(`Sync failed: ${err.message}`, true);
+    say(t('syncFailed', err.message), true);
   }
 });
 
@@ -888,45 +905,42 @@ $('inject').addEventListener('click', async () => {
   const shown = all.filter(isComplete);
   const skipped = all.length - shown.length;
   if (!shown.length) {
-    return say('Nothing complete to inject: each row needs a project (or an internal activity) and days.', true);
+    return say(t('nothingToInject'), true);
   }
-  say(`Injecting ${shown.length} entries...`);
+  say(tn('injecting', shown.length));
   try {
     const sendNotes = await getNotesToVsa();
     const res = await sendToVsa({ type: 'inject', entries: shown, options: { sendNotes } });
-    if (!res?.ok) throw new Error(res?.error || 'no response');
+    if (!res?.ok) throw new Error(res?.error || t('noResponse'));
     const bad = res.report.filter((r) => !r.ok);
-    const lines = `${res.prepared}/${res.total} lines prepared`;
     if (bad.length) {
-      say(
-        `${lines}. Failed: ` +
-          bad.map((b) => `${b.client} -> ${b.error}`).join('; ') +
-          '. No days were written for those lines.',
-        true
-      );
+      const failures = bad.map((b) => `${b.client} -> ${b.error}`).join('; ');
+      say(t('injectPartial', res.prepared, res.total, failures), true);
     } else {
       const comments = res.report.reduce((sum, r) => sum + (r.comments || 0), 0);
       say(
-        `Injected ${shown.length} entries.` +
-          (sendNotes ? ` ${comments} day comment(s) written.` : '') +
-          (skipped ? ` ${skipped} incomplete row(s) skipped.` : '') +
-          ' Review the grid, then press Save in VSA.'
+        sentences(
+          tn('injected', shown.length),
+          sendNotes && tn('commentsWritten', comments),
+          skipped && tn('incompleteSkipped', skipped),
+          t('reviewAndSave')
+        )
       );
     }
   } catch (err) {
-    say(`Injection failed: ${err.message}`, true);
+    say(t('injectFailed', err.message), true);
   }
 });
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg?.type === 'catalog-progress') {
-    say(`Syncing ${msg.index}/${msg.total}: ${msg.client}`);
+    say(t('syncProgress', msg.index, msg.total, msg.client));
   }
   if (msg?.type === 'inject-progress') {
     say(
       msg.phase === 'structure'
-        ? `Step 1/2, preparing lines ${msg.index}/${msg.total}: ${msg.client}`
-        : `Step 2/2, writing days ${msg.index}/${msg.total}: ${msg.client}`
+        ? t('injectStructure', msg.index, msg.total, msg.client)
+        : t('injectDays', msg.index, msg.total, msg.client)
     );
   }
   // Saved and rendered per client, so progress is visible and survives the
@@ -940,8 +954,8 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 $('reset-catalog').addEventListener('click', () => {
   const n = catalog.length;
-  if (!n) return say('Catalog is already empty.');
-  if (confirm(`Clear all ${n} clients and their projects?\n\nTracked entries are not affected.`)) {
+  if (!n) return say(t('catalogAlreadyEmpty'));
+  if (confirm(tn('confirmResetCatalog', n))) {
     resetCatalog();
   }
 });
@@ -950,7 +964,7 @@ $('reset-catalog').addEventListener('click', () => {
 // directly in the click handler rather than after an await chain.
 $('save-url').addEventListener('click', async () => {
   const raw = $('timesheet-url').value.trim();
-  if (!raw) return setUrlStatus('Enter your VSA timesheet URL.', true);
+  if (!raw) return setUrlStatus(t('enterUrl'), true);
 
   let origins;
   try {
@@ -961,16 +975,16 @@ $('save-url').addEventListener('click', async () => {
 
   const granted = await chrome.permissions.request({ origins });
   if (!granted) {
-    return setUrlStatus('Access denied. The extension cannot reach that site without it.', true);
+    return setUrlStatus(t('accessDenied'), true);
   }
 
   await setTimesheetUrl(raw);
   const res = await chrome.runtime.sendMessage({ type: 'sync-registration' });
   if (!res?.ok || !res.registered) {
-    return setUrlStatus(`Saved, but activation failed: ${res?.error || res?.reason}`, true);
+    return setUrlStatus(t('activationFailed', res?.error || res?.reason), true);
   }
   await refreshSetup();
-  setUrlStatus('Saved. Open your timesheet page and sync.', false);
+  setUrlStatus(t('savedOpenAndSync'), false);
 });
 
 function setUrlStatus(msg, isError) {
@@ -999,14 +1013,14 @@ async function refreshSetup() {
   if (!url) {
     configured = false;
     updateButtons();
-    setUrlStatus('Paste the address of your VSA timesheet page to begin.', false);
+    setUrlStatus(t('pasteUrlToBegin'), false);
     return false;
   }
 
   configured = await chrome.permissions.contains({ origins: [originPatternFor(url)] });
   updateButtons();
   if (!configured) {
-    setUrlStatus('Access to this site was revoked. Save again to restore it.', true);
+    setUrlStatus(t('accessRevoked'), true);
   }
   return configured;
 }
@@ -1021,15 +1035,13 @@ function updateButtons() {
 // chrome.storage.onChanged, so no reload is needed.
 $('language').addEventListener('change', async () => {
   await setLanguage($('language').value);
-  setUrlStatus('Language preference saved.', false);
+  setUrlStatus(t('languageSaved'), false);
 });
 
 $('notes-to-vsa').addEventListener('change', async () => {
   await setNotesToVsa($('notes-to-vsa').checked);
   setUrlStatus(
-    $('notes-to-vsa').checked
-      ? 'Notes will be written as day comments in VSA on the next injection.'
-      : 'Notes will no longer be sent to VSA.',
+    $('notes-to-vsa').checked ? t('notesOn') : t('notesOff'),
     false
   );
 });
@@ -1039,6 +1051,7 @@ $('prev-month').addEventListener('click', () => shiftMonth(-1));
 $('next-month').addEventListener('click', () => shiftMonth(1));
 
 (async function init() {
+  localizePage();
   $('month').value = todayMonth;
   entries = await loadEntries();
   catalog = (await chrome.storage.local.get('catalog')).catalog || [];
@@ -1051,8 +1064,8 @@ $('next-month').addEventListener('click', () => shiftMonth(1));
   render();
   if (!ready) return;
   if (catalog.length === 0) {
-    say('Open the VSA timesheet page, then sync clients & projects to start.', true);
+    say(t('startSync'), true);
   } else {
-    say(`${describeCatalog()} loaded.`);
+    say(t('catalogLoaded', describeCatalog()));
   }
 })();

@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "VSA Ext",
+  "name": "__MSG_extName__",
   "version": "1.7.0",
-  "description": "Readable selects and shadow tracking for VSA timesheets.",
+  "description": "__MSG_extDescription__",
+  "default_locale": "en",
   "permissions": [
     "storage",
     "scripting"
@@ -13,7 +14,7 @@
   },
   "options_page": "src/options/options.html",
   "action": {
-    "default_title": "VSA Ext",
+    "default_title": "__MSG_extName__",
     "default_icon": {
       "16": "icons/icon16.png",
       "48": "icons/icon48.png",

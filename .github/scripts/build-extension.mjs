@@ -18,7 +18,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 
 // Everything that ships, for every browser.
-export const PACKAGE_FILES = ['src', 'icons', 'docs/guide.html'];
+export const PACKAGE_FILES = ['src', '_locales', 'icons', 'docs/guide.html'];
 
 export const TARGETS = {
   chrome: { overlay: null, zip: (version) => `vsa-ext-${version}.zip` },

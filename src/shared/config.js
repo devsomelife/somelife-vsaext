@@ -47,12 +47,16 @@ export async function setTimesheetUrl(url) {
   await chrome.storage.local.set({ [KEY]: normalizeUrl(url) });
 }
 
+// The message of the error thrown for a URL that parses but is not a web page.
+// The options page recognises it to word it in the interface language.
+export const URL_NOT_HTTP = 'URL must be http or https';
+
 // Accepts what a user would paste from the address bar and trims the query and
 // fragment, which vary per visit and must not narrow the match pattern.
 export function normalizeUrl(input) {
   const url = new URL(String(input).trim());
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    throw new Error('URL must be http or https');
+    throw new Error(URL_NOT_HTTP);
   }
   return `${url.origin}${url.pathname}`;
 }
@@ -69,12 +73,6 @@ export function matchPatternFor(url) {
 // The origin alone, which is what a host permission is granted against.
 export function originPatternFor(url) {
   return `${new URL(normalizeUrl(url)).origin}/*`;
-}
-
-export function describeUrlError(err) {
-  return err instanceof TypeError
-    ? 'That does not look like a URL. Paste the full address, including https://'
-    : err.message;
 }
 
 // ---- Team CRA workbook -------------------------------------------------------
@@ -101,7 +99,7 @@ export function normalizeCraUrl(input) {
   if (!raw) return '';
   const url = new URL(raw);
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
-    throw new Error('URL must be http or https');
+    throw new Error(URL_NOT_HTTP);
   }
   return url.href;
 }

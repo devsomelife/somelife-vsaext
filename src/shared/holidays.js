@@ -83,7 +83,10 @@ export function holidayDefaults(country = DEFAULT_COUNTRY) {
 
 export const DEFAULT_HOLIDAY_SETTINGS = Object.freeze(holidayDefaults());
 
-const OBSERVED_LABEL = { substitute: 'substitute day', nearest: 'observed' };
+// The words added to holiday names, in English by default. The options page
+// passes its own, in the interface language: `dayOff` names a custom day
+// without a label, `substitute` and `nearest` mark a day shifted off a weekend.
+export const HOLIDAY_WORDS = Object.freeze({ dayOff: 'Day off', substitute: 'substitute day', nearest: 'observed' });
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS = 86400000;
@@ -230,35 +233,40 @@ export function ruleDays(year, settings) {
 // because a shift can cross the new year: in the USA, New Year's Day on a
 // Saturday is observed on the Friday before, in December. A custom day on a
 // holiday's date keeps the custom label: it is the one the user chose.
-export function holidaysFor(year, settings) {
+export function holidaysFor(year, settings, words = HOLIDAY_WORDS) {
   const s = normalizeHolidaySettings(settings);
-  const word = OBSERVED_LABEL[COUNTRIES[s.country].observe];
+  const word = words[COUNTRIES[s.country].observe];
   const out = new Map();
   for (const d of observedDays(s, [year - 1, year, year + 1])) {
     if (!d.off.startsWith(`${year}-`) || out.has(d.off)) continue;
     out.set(d.off, d.off === d.date ? d.rule.label : `${d.rule.label} (${word})`);
   }
   for (const c of s.custom) {
-    if (c.date.startsWith(`${year}-`)) out.set(c.date, c.label || 'Day off');
+    if (c.date.startsWith(`${year}-`)) out.set(c.date, c.label || words.dayOff);
   }
   return out;
 }
 
-export function observedWord(country) {
-  return OBSERVED_LABEL[COUNTRIES[country]?.observe] ?? '';
+export function observedWord(country, words = HOLIDAY_WORDS) {
+  return words[COUNTRIES[country]?.observe] ?? '';
 }
 
 // Every date from `from` to `to` inclusive, minus weekends and holidays unless
 // asked for. Skipped dates are returned too, so the user sees why a day is
-// missing.
-export function rangeDates(from, to, { weekends = false, holidays = false } = {}, settings = DEFAULT_HOLIDAY_SETTINGS) {
+// missing; `words` are passed on to holidaysFor.
+export function rangeDates(
+  from,
+  to,
+  { weekends = false, holidays = false, words = HOLIDAY_WORDS } = {},
+  settings = DEFAULT_HOLIDAY_SETTINGS
+) {
   const dates = [];
   const skipped = [];
   if (!isDate(from) || !isDate(to) || from > to) return { dates, skipped };
   const byYear = new Map();
   const holidayOf = (date) => {
     const year = +date.slice(0, 4);
-    if (!byYear.has(year)) byYear.set(year, holidaysFor(year, settings));
+    if (!byYear.has(year)) byYear.set(year, holidaysFor(year, settings, words));
     return byYear.get(year).get(date);
   };
   for (let d = from; d <= to; d = addDays(d, 1)) {

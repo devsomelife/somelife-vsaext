@@ -14,6 +14,7 @@ import {
   nthWeekday,
   ruleDays,
   spanDays,
+  observedWord,
   FRENCH_RULES,
   DEFAULT_HOLIDAY_SETTINGS,
 } from '../src/shared/holidays.js';
@@ -232,4 +233,14 @@ test('the span counts calendar days, weekends included', () => {
   assert.equal(spanDays('2026-03-01', '2026-04-01'), 32);
   assert.equal(spanDays('2026-09-05', '2026-09-01'), 0);
   assert.equal(spanDays('', '2026-09-01'), 0);
+});
+
+test('holiday words can be given in another language', () => {
+  const words = { dayOff: 'Jour chômé', substitute: 'report', nearest: 'chômé' };
+  assert.equal(holidaysFor(2026, uk, words).get('2026-12-28'), 'Boxing Day (report)');
+  const custom = normalizeHolidaySettings({ ...DEFAULT_HOLIDAY_SETTINGS, custom: [{ date: '2026-09-07' }] });
+  const { skipped } = rangeDates('2026-09-07', '2026-09-07', { words }, custom);
+  assert.deepEqual(skipped, [{ date: '2026-09-07', reason: 'Jour chômé' }]);
+  assert.equal(observedWord('us', words), 'chômé');
+  assert.equal(observedWord('fr', words), '');
 });
