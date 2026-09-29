@@ -34,8 +34,8 @@ test('reports rows whose days are not a whole number of hours', () => {
   const bad = [{ date: '2026-09-04', client: 'ATLAS LOGISTIQUE', project: 'BS-99-000012 [TMA]', days: 0.3, note: '' }];
   const { payload, problems } = buildCraPayload(bad, { month: '2026-09' });
   assert.equal(problems.length, 1);
-  assert.match(problems[0], /2026-09-04/);
-  assert.match(problems[0], /2\.4 h/);
+  assert.equal(problems[0].date, '2026-09-04');
+  assert.ok(Math.abs(problems[0].hours - 2.4) < 1e-9);
   assert.deepEqual(payload.rows, []);
 });
 

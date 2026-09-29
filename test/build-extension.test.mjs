@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { mergeManifest } from '../.github/scripts/build-extension.mjs';
+import { mergeManifest, PACKAGE_FILES } from '../.github/scripts/build-extension.mjs';
 
 const read = (rel) => JSON.parse(readFileSync(new URL(rel, import.meta.url), 'utf8'));
 const base = read('../manifest.json');
@@ -41,4 +41,8 @@ test('merging does not modify its inputs', () => {
   const before = JSON.stringify([base, overlay]);
   mergeManifest(base, overlay).background.scripts.push('changed.js');
   assert.equal(JSON.stringify([base, overlay]), before);
+});
+
+test('the packages ship the translations', () => {
+  assert.ok(PACKAGE_FILES.includes('_locales'));
 });

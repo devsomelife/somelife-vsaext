@@ -33,7 +33,8 @@ function projectOf(e) {
 
 // Builds the block for one month. Incomplete rows are skipped and counted, as
 // injection does; rows whose days do not make a whole number of hours are
-// reported as problems and the caller must not copy anything.
+// reported as problems ({ date, project, days, hours }, worded by the caller)
+// and the caller must not copy anything.
 export function buildCraPayload(entries, { month, person = '', hoursPerDay = HOURS_PER_DAY }) {
   const inMonth = entriesForMonth(entries, month);
   const complete = inMonth.filter(isComplete);
@@ -44,7 +45,7 @@ export function buildCraPayload(entries, { month, person = '', hoursPerDay = HOU
     const hours = days * hoursPerDay;
     const project = projectOf(e);
     if (!isWhole(hours)) {
-      problems.push(`${e.date} ${project}: ${days} day(s) is ${hours} h, not a whole number of hours`);
+      problems.push({ date: e.date, project, days, hours });
       continue;
     }
     rows.push({

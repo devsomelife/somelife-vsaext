@@ -7,28 +7,28 @@
 </head>
 <body>
   <header>
-    <h1>Shadow Tracking</h1>
+    <h1 data-i18n="pageTitle"></h1>
     <div class="month-nav">
-      <button id="prev-month" type="button">&lt;</button>
-      <input id="month" type="month">
-      <button id="next-month" type="button">&gt;</button>
+      <button id="prev-month" type="button" data-i18n-title="prevMonth" data-i18n-aria-label="prevMonth">&lt;</button>
+      <input id="month" type="month" data-i18n-aria-label="monthLabel">
+      <button id="next-month" type="button" data-i18n-title="nextMonth" data-i18n-aria-label="nextMonth">&gt;</button>
     </div>
   </header>
 
   <details id="setup">
-    <summary>Settings</summary>
-    <label for="timesheet-url">VSA timesheet URL</label>
+    <summary data-i18n="settings"></summary>
+    <label for="timesheet-url" data-i18n="timesheetUrl"></label>
     <div class="url-row">
-      <input id="timesheet-url" type="url" placeholder="https://your-company.vsactivity.com/o_services/timesheetspivot/">
-      <button id="save-url" type="button">Save &amp; grant access</button>
-      <button id="open-timesheet" type="button" disabled>Open</button>
+      <input id="timesheet-url" type="url" data-i18n-placeholder="timesheetUrlPlaceholder">
+      <button id="save-url" type="button" data-i18n="saveUrl"></button>
+      <button id="open-timesheet" type="button" disabled data-i18n="open"></button>
     </div>
     <p id="url-status" class="hint"></p>
 
     <div class="pref-row">
-      <label for="language">VSA language</label>
+      <label for="language" data-i18n="vsaLanguage"></label>
       <select id="language">
-        <option value="auto">Detect automatically</option>
+        <option value="auto" data-i18n="languageAuto"></option>
         <option value="fr">Français</option>
         <option value="en">English</option>
       </select>
@@ -36,39 +36,39 @@
 
     <div class="pref-row">
       <input id="notes-to-vsa" type="checkbox">
-      <label for="notes-to-vsa">Send notes to VSA as day comments</label>
+      <label for="notes-to-vsa" data-i18n="notesToVsa"></label>
     </div>
 
     <div class="pref-row">
-      <label for="cra-sheet">CRA sheet tab</label>
-      <input id="cra-sheet" type="text" placeholder="Firstname LASTNAME (optional)">
+      <label for="cra-sheet" data-i18n="craSheet"></label>
+      <input id="cra-sheet" type="text" data-i18n-placeholder="craSheetPlaceholder">
     </div>
     <div class="pref-row">
-      <label for="cra-url">CRA workbook URL</label>
-      <input id="cra-url" type="url" placeholder="https://…sharepoint.com/… (optional)">
-      <button id="cra-open" type="button" disabled>Open</button>
+      <label for="cra-url" data-i18n="craUrl"></label>
+      <input id="cra-url" type="url" data-i18n-placeholder="craUrlPlaceholder">
+      <button id="cra-open" type="button" disabled data-i18n="open"></button>
     </div>
   </details>
 
   <details id="holidays">
-    <summary>Public holidays: <span id="holidays-country"></span> <span id="holidays-year"></span></summary>
-    <p class="hint">Days ticked here are left out of a range unless you include bank holidays. The buttons below switch to the France, UK or USA list.</p>
+    <summary><span data-i18n="holidaysTitle"></span> <span id="holidays-country"></span> <span id="holidays-year"></span></summary>
+    <p class="hint" data-i18n="holidaysHint"></p>
     <table class="holiday-table">
       <tbody id="holiday-rules"></tbody>
     </table>
-    <h2>Custom days off</h2>
+    <h2 data-i18n="customDaysOff"></h2>
     <table class="holiday-table">
       <tbody id="holiday-custom"></tbody>
     </table>
     <div class="pref-row">
-      <input id="custom-date" type="date" aria-label="Day off date">
-      <input id="custom-label" type="text" placeholder="Label (optional)" aria-label="Day off label">
-      <button id="custom-add" type="button">Add</button>
+      <input id="custom-date" type="date" data-i18n-aria-label="customDate">
+      <input id="custom-label" type="text" data-i18n-placeholder="customLabelPlaceholder" data-i18n-aria-label="customLabel">
+      <button id="custom-add" type="button" data-i18n="add"></button>
     </div>
     <div class="actions">
-      <button type="button" data-holidays-reset="fr">Reset to France defaults</button>
-      <button type="button" data-holidays-reset="uk">Reset to UK defaults</button>
-      <button type="button" data-holidays-reset="us">Reset to USA defaults</button>
+      <button type="button" data-holidays-reset="fr" data-i18n="resetHolidays_fr"></button>
+      <button type="button" data-holidays-reset="uk" data-i18n="resetHolidays_uk"></button>
+      <button type="button" data-holidays-reset="us" data-i18n="resetHolidays_us"></button>
     </div>
   </details>
 
@@ -84,66 +84,66 @@
     </colgroup>
     <thead>
       <tr>
-        <th>Date</th><th>Client</th><th>Project</th><th>Days</th><th>Note</th><th></th>
+        <th data-i18n="colDate"></th><th data-i18n="colClient"></th><th data-i18n="colProject"></th><th data-i18n="colDays"></th><th data-i18n="colNote"></th><th></th>
       </tr>
     </thead>
     <tbody id="rows"></tbody>
     <tfoot>
-      <tr><td colspan="3" id="total-label">Total</td><td id="total">0</td><td colspan="2" id="row-count"></td></tr>
+      <tr><td colspan="3" id="total-label" data-i18n="total"></td><td id="total">0</td><td colspan="2" id="row-count"></td></tr>
     </tfoot>
   </table>
   </div>
 
   <div class="actions">
-    <button id="add-row" type="button">Add row</button>
-    <button id="add-range" type="button">Add range</button>
-    <button id="export" type="button">Export JSON</button>
-    <button id="export-csv" type="button">Export CSV</button>
-    <button id="copy-cra" type="button">Copy for CRA sheet</button>
-    <button id="copy-admin" type="button">Copy projects for Admin</button>
-    <button id="import" type="button">Import JSON</button>
+    <button id="add-row" type="button" data-i18n="addRow"></button>
+    <button id="add-range" type="button" data-i18n="addRange"></button>
+    <button id="export" type="button" data-i18n="exportJson"></button>
+    <button id="export-csv" type="button" data-i18n="exportCsv"></button>
+    <button id="copy-cra" type="button" data-i18n="copyCra"></button>
+    <button id="copy-admin" type="button" data-i18n="copyAdmin"></button>
+    <button id="import" type="button" data-i18n="importJson"></button>
     <input id="import-file" type="file" accept="application/json" hidden>
   </div>
 
   <section id="range" hidden aria-labelledby="range-title">
-    <h2 id="range-title">Add range</h2>
+    <h2 id="range-title" data-i18n="rangeTitle"></h2>
     <div class="pref-row">
-      <label for="range-client">Client</label>
+      <label for="range-client" data-i18n="colClient"></label>
       <select id="range-client"></select>
-      <label for="range-project">Project</label>
+      <label for="range-project" data-i18n="colProject"></label>
       <select id="range-project"></select>
     </div>
     <div class="pref-row">
-      <label for="range-days">Days</label>
+      <label for="range-days" data-i18n="colDays"></label>
       <input id="range-days" type="number" step="0.125" min="0" max="1">
-      <label for="range-note">Note</label>
+      <label for="range-note" data-i18n="colNote"></label>
       <input id="range-note" type="text">
     </div>
     <div class="pref-row">
-      <label for="range-from">From</label>
+      <label for="range-from" data-i18n="rangeFrom"></label>
       <input id="range-from" type="date">
-      <label for="range-to">To</label>
+      <label for="range-to" data-i18n="rangeTo"></label>
       <input id="range-to" type="date">
     </div>
     <div class="pref-row">
       <input id="range-weekends" type="checkbox">
-      <label for="range-weekends">Include weekends</label>
+      <label for="range-weekends" data-i18n="includeWeekends"></label>
       <input id="range-holidays" type="checkbox">
-      <label for="range-holidays">Include bank holidays</label>
+      <label for="range-holidays" data-i18n="includeHolidays"></label>
     </div>
     <p id="range-preview" class="hint"></p>
     <p id="range-skipped" class="hint"></p>
     <div class="actions">
-      <button id="range-cancel" type="button">Cancel</button>
-      <button id="range-submit" type="button" class="primary">Add rows</button>
+      <button id="range-cancel" type="button" data-i18n="cancel"></button>
+      <button id="range-submit" type="button" class="primary" data-i18n="addRows"></button>
     </div>
   </section>
-  <textarea id="cra-fallback" rows="3" readonly hidden aria-label="CRA block to copy by hand"></textarea>
+  <textarea id="cra-fallback" rows="3" readonly hidden data-i18n-aria-label="craFallback"></textarea>
 
   <div class="actions vsa-actions">
-    <button id="sync" type="button">Sync clients &amp; projects from VSA</button>
-    <button id="reset-catalog" type="button" class="danger">Reset catalog</button>
-    <button id="inject" type="button" class="primary">Inject this month into VSA</button>
+    <button id="sync" type="button" data-i18n="sync"></button>
+    <button id="reset-catalog" type="button" class="danger" data-i18n="resetCatalog"></button>
+    <button id="inject" type="button" class="primary" data-i18n="inject"></button>
   </div>
 
   <p id="status" role="status"></p>

@@ -36,6 +36,8 @@ Loading `build/firefox/manifest.json` as a temporary add-on from
 | `src/content/inject.js` | Catalog sync and the two-pass injection. |
 | `src/content/main.js` | Content script entry and message handling. |
 | `src/options/` | The tracking page. |
+| `_locales/` | Interface strings, English (`en`, the default) and French (`fr`). The browser picks the locale from its UI language. |
+| `src/shared/i18n.js` | Message lookup, plurals (`_one` / `_other` keys) and the `data-i18n` attributes of the options page. |
 | `src/shared/store.js` | Entry model and `chrome.storage` access. |
 | `src/shared/config.js` | The user's timesheet URL and its match patterns, plus the CRA workbook preferences. |
 | `src/shared/cra.js` | The one-line block copied for the team CRA workbook (contract v1). |
@@ -93,6 +95,15 @@ source code upload: nothing is minified).
 
 The version must be one to four dot-separated integers, and the tag must not
 already exist; the workflow fails rather than overwriting either.
+
+## Interface strings
+
+Every label and message of the options page comes from `_locales`. Add a
+string to both `en` and `fr`, with the same named placeholders in the same
+order; `test/i18n.test.mjs` fails on a key missing from either, a placeholder
+mismatch, a key the page uses but no locale has, and a message nothing uses.
+Label static markup with `data-i18n` (text) or `data-i18n-<attribute>`, and
+look messages up with `t()`, or `tn()` for a count.
 
 ## Working against VSA
 
