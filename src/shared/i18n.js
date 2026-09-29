@@ -15,8 +15,13 @@ let cached;
 function rules() {
   if (!cached) {
     const locale = t('locale');
+    const regional = new Intl.DateTimeFormat().resolvedOptions().locale;
     cached = {
       locale,
+      // Dates keep the browser's regional format (day or month first, en-GB or
+      // en-US) when it is in the interface language, and follow the interface
+      // otherwise, so a French sentence never carries a US date.
+      dates: regional.split('-')[0] === locale ? regional : locale,
       plural: new Intl.PluralRules(locale),
       number: new Intl.NumberFormat(locale, { maximumFractionDigits: 3, useGrouping: false }),
     };
@@ -37,6 +42,10 @@ export function formatNumber(n) {
 
 export function uiLocale() {
   return rules().locale;
+}
+
+export function dateLocale() {
+  return rules().dates;
 }
 
 // Static labels are named in the markup and filled at load: data-i18n sets the

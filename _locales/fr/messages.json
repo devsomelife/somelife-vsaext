@@ -6,7 +6,8 @@
     "message": "Listes déroulantes lisibles et saisie parallèle pour les feuilles de temps VSA."
   },
   "locale": {
-    "message": "fr"
+    "message": "fr",
+    "description": "The language tag of this file, for plural rules and number and date formats. Keep it a BCP 47 tag."
   },
   "pageTitle": {
     "message": "Saisie parallèle"
@@ -96,10 +97,32 @@
     "message": "États-Unis"
   },
   "observed_substitute": {
-    "message": "report"
+    "message": "jour de remplacement"
   },
   "observed_nearest": {
-    "message": "chômé"
+    "message": "jour chômé"
+  },
+  "holidayShifted": {
+    "message": "($WORD$ le $DATE$)",
+    "placeholders": {
+      "word": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "listSemicolon": {
+    "message": "$FIRST$ ; $NEXT$",
+    "placeholders": {
+      "first": {
+        "content": "$1"
+      },
+      "next": {
+        "content": "$2"
+      }
+    }
   },
   "dayOff": {
     "message": "Jour chômé"
@@ -360,7 +383,7 @@
     "message": "Choisissez un projet."
   },
   "rangeBadDays": {
-    "message": "Les jours doivent être supérieurs à 0 et au plus égaux à 1."
+    "message": "Le nombre de jours doit être supérieur à 0 et au plus égal à 1."
   },
   "rangeNeedDates": {
     "message": "Choisissez une date de début et une date de fin."
@@ -515,7 +538,7 @@
     }
   },
   "craProblem": {
-    "message": "$DATE$ $PROJECT$ : $DAYS$ jour(s) font $HOURS$ h, pas un nombre entier d'heures",
+    "message": "$DATE$ $PROJECT$ : $DAYS$ jour = $HOURS$ h, pas un nombre entier d'heures",
     "placeholders": {
       "date": {
         "content": "$1"
@@ -590,7 +613,7 @@
     "message": "Dans le classeur CRA, sur votre onglet : cliquez sur la cellule I23, collez, puis cliquez sur « Importer VSA Ext »."
   },
   "craClipboardFailed": {
-    "message": "Accès au presse-papiers refusé : le bloc est affiché ci-dessous. Copiez-le à la main (Ctrl+C), puis collez-le dans la cellule I23 de votre onglet du CRA."
+    "message": "Accès au presse-papiers impossible : le bloc est affiché ci-dessous. Copiez-le à la main (Ctrl+C), puis collez-le dans la cellule I23 de votre onglet du CRA."
   },
   "adminNothingInternal": {
     "message": "Rien à copier : les activités internes ne sont pas des projets Admin."
@@ -640,7 +663,7 @@
     "message": "Envoyez-les à la personne qui tient le classeur CRA, ou collez-les dans la première ligne vide du tableau des projets de l'onglet Admin."
   },
   "adminClipboardFailed": {
-    "message": "Accès au presse-papiers refusé : les lignes sont affichées ci-dessous. Copiez-les à la main (Ctrl+C)."
+    "message": "Accès au presse-papiers impossible : les lignes sont affichées ci-dessous. Copiez-les à la main (Ctrl+C)."
   },
   "saveUrlFirst": {
     "message": "Enregistrez d'abord une adresse"
@@ -865,7 +888,7 @@
     }
   },
   "staleKept_one": {
-    "message": "$COUNT$ conservé depuis une synchronisation précédente (lecture en échec cette fois).",
+    "message": "$COUNT$ client conservé depuis une synchronisation précédente (lecture en échec cette fois).",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -873,7 +896,7 @@
     }
   },
   "staleKept_other": {
-    "message": "$COUNT$ conservés depuis une synchronisation précédente (lecture en échec cette fois).",
+    "message": "$COUNT$ clients conservés depuis une synchronisation précédente (lecture en échec cette fois).",
     "placeholders": {
       "count": {
         "content": "$1"

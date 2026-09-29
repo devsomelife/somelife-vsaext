@@ -79,7 +79,7 @@ Tout est enregistré au fil de la frappe. Le pied de tableau affiche votre total
 Pour le même temps sur le même projet plusieurs jours de suite (un projet suivi toute la semaine, une formation...) :
 
 1. Cliquez sur **Saisir une plage**. Le formulaire reprend le client, le projet et les journées de la dernière ligne du mois.
-2. Choisissez le **client**, le **projet**, le nombre de **Jours** par jour et, si besoin, une **Note**.
+2. Choisissez le **client**, le **projet**, la part de journée (**Jours**) et, si besoin, une **Note**.
 3. Indiquez **Du** et **Au**.
 4. Lisez l'aperçu : les jours retenus, les jours écartés, et les jours qui dépasseraient une journée avec les lignes déjà saisies.
 5. Cliquez sur **Ajouter N lignes** : une ligne est créée par jour, modifiable ensuite comme toute autre ligne.
@@ -97,8 +97,8 @@ Le panneau **Jours fériés**, sous les réglages, liste les jours écartés d'u
 - Vendredi saint et Saint-Étienne (Alsace-Moselle) sont proposés, décochés.
 - **Jours chômés personnalisés** ajoute vos propres jours : pont, fermeture d'entreprise, jour férié local. Une date et un libellé facultatif, puis **Ajouter**.
 - **Rétablir la liste France**, **Rétablir la liste Royaume-Uni** et **Rétablir la liste États-Unis** remplacent la liste par celle du pays choisi et suppriment les jours ajoutés. La France reste la liste par défaut ; le titre du panneau indique le pays retenu.
-- **Royaume-Uni** : les jours fériés d'Angleterre et du pays de Galles sont cochés ; ceux d'Écosse et d'Irlande du Nord sont proposés, décochés. Un jour férié tombant un week-end est remplacé par le jour ouvré suivant, marqué *report*. Les jours exceptionnels (événements royaux) s'ajoutent en jours personnalisés.
-- **États-Unis** : les 11 jours fériés fédéraux sont cochés, le lendemain de Thanksgiving est proposé, décoché. Un jour férié tombant un samedi est chômé le vendredi, un dimanche le lundi, marqué *chômé*.
+- **Royaume-Uni** : les jours fériés d'Angleterre et du pays de Galles sont cochés ; ceux d'Écosse et d'Irlande du Nord sont proposés, décochés. Un jour férié tombant un week-end est remplacé par le jour ouvré suivant, marqué *jour de remplacement*. Les jours exceptionnels (événements royaux) s'ajoutent en jours personnalisés.
+- **États-Unis** : les 11 jours fériés fédéraux sont cochés, le lendemain de Thanksgiving est proposé, décoché. Un jour férié tombant un samedi est chômé le vendredi, un dimanche le lundi, marqué *jour chômé*.
 
 ### Report dans VSA
 

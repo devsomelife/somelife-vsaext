@@ -118,3 +118,10 @@ test('locales without a default_locale are reported', () => {
   assert.match(r.out, /_locales is present, so default_locale must be set/);
   assert.match(r.out, /name uses __MSG_extName__ but default_locale is not set/);
 });
+
+test('a malformed or empty locale folder is reported', () => {
+  const r = validate('chrome', chrome, { ...FILES, '_locales/fr/messages.json': '{', '_locales/de/.keep': '' });
+  assert.equal(r.ok, false);
+  assert.match(r.out, /_locales\/fr\/messages\.json is not valid JSON/);
+  assert.match(r.out, /_locales\/de: missing messages\.json/);
+});

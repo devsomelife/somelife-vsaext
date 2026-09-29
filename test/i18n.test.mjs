@@ -98,8 +98,9 @@ test('no hardcoded label is left in the options page markup', () => {
 });
 
 test('English messages, with English plurals', async () => {
-  const { t, tn, formatNumber, uiLocale } = await load('en');
+  const { t, tn, formatNumber, uiLocale, dateLocale } = await load('en');
   assert.equal(uiLocale(), 'en');
+  assert.equal(dateLocale().split('-')[0], 'en');
   assert.equal(t('addRow'), 'Add row');
   assert.equal(tn('addCountRows', 1), 'Add 1 row');
   assert.equal(tn('addCountRows', 0), 'Add 0 rows');
@@ -110,8 +111,10 @@ test('English messages, with English plurals', async () => {
 });
 
 test('French messages, with French plurals and decimals', async () => {
-  const { t, tn, formatNumber, uiLocale } = await load('fr');
+  const { t, tn, formatNumber, uiLocale, dateLocale } = await load('fr');
   assert.equal(uiLocale(), 'fr');
+  assert.equal(dateLocale().split('-')[0], 'fr');
+  assert.equal(t('listSemicolon', 'a', 'b'), 'a\u00a0; b');
   assert.equal(t('addRow'), 'Ajouter une ligne');
   assert.equal(tn('addCountRows', 0), 'Ajouter 0 ligne');
   assert.equal(tn('addCountRows', 1), 'Ajouter 1 ligne');

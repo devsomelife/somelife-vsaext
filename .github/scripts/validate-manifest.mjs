@@ -11,7 +11,7 @@
 //   node validate-manifest.mjs --target chrome --zip <file.zip>    a built package
 //   node validate-manifest.mjs --target firefox --dir build/firefox
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join, posix } from 'node:path';
 
@@ -38,6 +38,8 @@ if (target === 'firefox' && !zip && !dir) {
 
 let read;
 let has;
+// The locale folders under _locales, whether or not they hold messages.json.
+let locales;
 
 if (zip) {
   const listing = execFileSync('unzip', ['-Z1', zip], { encoding: 'utf8' })
@@ -47,12 +49,15 @@ if (zip) {
   const entries = new Set(listing);
   has = (p) => entries.has(p);
   read = (p) => execFileSync('unzip', ['-p', zip, p], { encoding: 'utf8' });
+  locales = [...new Set(listing.map((p) => p.match(/^_locales\/([^/]+)\//)?.[1]).filter(Boolean))];
 } else if (dir) {
   has = (p) => existsSync(join(dir, p));
   read = (p) => readFileSync(join(dir, p), 'utf8');
+  locales = existsSync(join(dir, '_locales')) ? readdirSync(join(dir, '_locales')) : [];
 } else {
   has = (p) => existsSync(p);
   read = (p) => readFileSync(p, 'utf8');
+  locales = existsSync('_locales') ? readdirSync('_locales') : [];
 }
 
 const errors = [];
@@ -107,25 +112,32 @@ if (manifest.options_page && has(manifest.options_page)) {
 }
 
 // Localized strings. Chrome refuses to load an extension with _locales but no
-// default_locale, and both browsers show a __MSG_x__ that does not resolve as
-// the raw text, so every one used in the manifest must be in the default locale.
-const localesDir = has('_locales') || has('_locales/');
-let messages = new Map();
-if (manifest.default_locale) {
-  const path = `_locales/${manifest.default_locale}/messages.json`;
+// default_locale, or with a locale folder whose messages.json is missing or
+// malformed. Both browsers show a __MSG_x__ that does not resolve as the raw
+// text, so every one used in the manifest must be in the default locale.
+const parsedLocales = new Map();
+for (const locale of locales) {
+  const path = `_locales/${locale}/messages.json`;
   if (!has(path)) {
-    errors.push(`default_locale: missing ${path}`);
-  } else {
-    try {
-      const parsed = JSON.parse(read(path));
-      messages = new Map(Object.entries(parsed).map(([key, value]) => [key.toLowerCase(), value?.message]));
-    } catch (err) {
-      errors.push(`${path} is not valid JSON: ${err.message}`);
-    }
+    errors.push(`_locales/${locale}: missing messages.json`);
+    continue;
   }
-} else if (localesDir) {
+  try {
+    parsedLocales.set(locale, JSON.parse(read(path)));
+  } catch (err) {
+    errors.push(`${path} is not valid JSON: ${err.message}`);
+  }
+}
+if (manifest.default_locale) {
+  if (!locales.includes(manifest.default_locale)) {
+    errors.push(`default_locale: missing _locales/${manifest.default_locale}/messages.json`);
+  }
+} else if (locales.length) {
   errors.push('_locales is present, so default_locale must be set');
 }
+const messages = new Map(
+  Object.entries(parsedLocales.get(manifest.default_locale) ?? {}).map(([key, value]) => [key.toLowerCase(), value?.message])
+);
 
 function* strings(value, path) {
   if (typeof value === 'string') yield [path, value];

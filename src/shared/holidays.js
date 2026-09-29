@@ -70,9 +70,9 @@ export const US_RULES = [
 //   substitute  the next weekday not already a holiday is off (UK)
 //   nearest     Saturday -> the Friday before, Sunday -> the Monday after (USA)
 export const COUNTRIES = {
-  fr: { name: 'France', rules: FRENCH_RULES, observe: null },
-  uk: { name: 'UK', rules: UK_RULES, observe: 'substitute' },
-  us: { name: 'USA', rules: US_RULES, observe: 'nearest' },
+  fr: { rules: FRENCH_RULES, observe: null },
+  uk: { rules: UK_RULES, observe: 'substitute' },
+  us: { rules: US_RULES, observe: 'nearest' },
 };
 
 export const DEFAULT_COUNTRY = 'fr';

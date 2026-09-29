@@ -6,7 +6,8 @@
     "message": "Readable selects and shadow tracking for VSA timesheets."
   },
   "locale": {
-    "message": "en"
+    "message": "en",
+    "description": "The language tag of this file, for plural rules and number and date formats. Keep it a BCP 47 tag."
   },
   "pageTitle": {
     "message": "Shadow Tracking"
@@ -100,6 +101,28 @@
   },
   "observed_nearest": {
     "message": "observed"
+  },
+  "holidayShifted": {
+    "message": "($WORD$ $DATE$)",
+    "placeholders": {
+      "word": {
+        "content": "$1"
+      },
+      "date": {
+        "content": "$2"
+      }
+    }
+  },
+  "listSemicolon": {
+    "message": "$FIRST$; $NEXT$",
+    "placeholders": {
+      "first": {
+        "content": "$1"
+      },
+      "next": {
+        "content": "$2"
+      }
+    }
   },
   "dayOff": {
     "message": "Day off"
@@ -865,7 +888,7 @@
     }
   },
   "staleKept_one": {
-    "message": "$COUNT$ kept from a previous sync (lookup failed this time).",
+    "message": "$COUNT$ client kept from a previous sync (lookup failed this time).",
     "placeholders": {
       "count": {
         "content": "$1"
@@ -873,7 +896,7 @@
     }
   },
   "staleKept_other": {
-    "message": "$COUNT$ kept from a previous sync (lookup failed this time).",
+    "message": "$COUNT$ clients kept from a previous sync (lookup failed this time).",
     "placeholders": {
       "count": {
         "content": "$1"

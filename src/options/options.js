@@ -41,7 +41,7 @@ import {
   toggleRule,
 } from '../shared/holidays.js';
 import { buildCraPayload, serializeCraPayload, buildAdminRows, serializeAdminRows } from '../shared/cra.js';
-import { t, tn, formatNumber, localizePage } from '../shared/i18n.js';
+import { t, tn, formatNumber, dateLocale, localizePage } from '../shared/i18n.js';
 
 const $ = (id) => document.getElementById(id);
 const rowsEl = $('rows');
@@ -76,6 +76,15 @@ const countryName = (code) => t(`country_${code}`);
 
 // Sentences built from optional parts, each already punctuated.
 const sentences = (...parts) => parts.filter(Boolean).join(' ');
+
+// Items joined by semicolons, spaced as the locale wants.
+const semicolons = (items) => items.reduce((list, item) => t('listSemicolon', list, item));
+
+// "2026-10" as "October 2026" or "octobre 2026".
+function monthName(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(dateLocale(), { month: 'long', year: 'numeric' });
+}
 
 // A pasted value that is not a URL at all throws a TypeError from new URL().
 function describeUrlError(err) {
@@ -245,7 +254,7 @@ function rowTemplate(e) {
     if (field === 'date') {
       el.addEventListener('change', () => {
         if (!el.value) return;
-        if (monthOf(el.value) !== currentMonth()) say(t('rowMoved', monthOf(el.value)));
+        if (monthOf(el.value) !== currentMonth()) say(t('rowMoved', monthName(monthOf(el.value))));
         render();
       });
     }
@@ -283,7 +292,7 @@ const DAY_STATUS_TEXT = {
 
 function dayLabel(date) {
   const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale(), {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
@@ -499,7 +508,7 @@ function rangeProblem(line, { dates, span }) {
 }
 
 const listDays = (dates) =>
-  dates.length <= 7 ? dates.map(dayLabel).join('; ') : `${dayLabel(dates[0])} ... ${dayLabel(dates.at(-1))}`;
+  dates.length <= 7 ? semicolons(dates.map(dayLabel)) : `${dayLabel(dates[0])} ... ${dayLabel(dates.at(-1))}`;
 
 function setHint(el, msg, color) {
   el.textContent = msg;
@@ -536,7 +545,7 @@ function updateRangePreview() {
   const weekends = skipped.filter((s) => s.reason === 'weekend').length;
   const holidays = skipped.filter((s) => s.reason !== 'weekend').map((s) => `${dayLabel(s.date)} ${s.reason}`);
   const parts = [...(weekends ? [tn('weekendDays', weekends)] : []), ...holidays];
-  setHint($('range-skipped'), parts.length ? t('rangeSkipped', parts.join('; ')) : '');
+  setHint($('range-skipped'), parts.length ? t('rangeSkipped', semicolons(parts)) : '');
 }
 
 // Prefilled like Add row: the last row's client, project and days, starting the
@@ -589,7 +598,7 @@ $('range-submit').addEventListener('click', () => {
   say(
     sentences(
       tn('rangeAdded', dates.length, dayLabel(dates[0]), dayLabel(dates.at(-1))),
-      elsewhere.length && t('rangeElsewhere', elsewhere.length, months.join(', '))
+      elsewhere.length && t('rangeElsewhere', elsewhere.length, months.map(monthName).join(', '))
     )
   );
 });
@@ -604,7 +613,7 @@ function holidayCell(text) {
 
 const fullDate = (date) => {
   const [y, m, d] = date.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+  return new Date(y, m - 1, d).toLocaleDateString(dateLocale(), {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
@@ -636,7 +645,7 @@ function renderHolidays() {
       const first = document.createElement('td');
       first.append(box, ' ', label);
       // A weekend holiday shifted to a weekday shows the day actually off.
-      const shifted = off && off !== date ? ` (${word} ${fullDate(off)})` : '';
+      const shifted = off && off !== date ? ` ${t('holidayShifted', word, fullDate(off))}` : '';
       tr.append(first, holidayCell(fullDate(date) + shifted));
       return tr;
     })
@@ -747,7 +756,7 @@ $('export-csv').addEventListener('click', async () => {
   const shown = entriesForMonth(entries, month);
   if (!shown.length) return say(t('nothingToExport'), true);
   download(toCsv(shown), `vsa-shadow-tracking-${month}.csv`, 'text/csv;charset=utf-8');
-  say(tn('exported', shown.length, month));
+  say(tn('exported', shown.length, monthName(month)));
 });
 
 // The team CRA workbook takes the month as one line of JSON pasted into a cell
@@ -760,7 +769,7 @@ $('copy-cra').addEventListener('click', async () => {
   const { payload, problems, hours, skipped } = buildCraPayload(entries, { month, person });
   if (problems.length) {
     const list = problems.map((p) => t('craProblem', p.date, p.project, formatNumber(p.days), formatNumber(p.hours)));
-    return say(t('cannotCopy', list.join('; ')), true);
+    return say(t('cannotCopy', semicolons(list)), true);
   }
   if (!payload.rows.length) return say(t('nothingCompleteToCopy'), true);
   const text = serializeCraPayload(payload);
@@ -770,7 +779,7 @@ $('copy-cra').addEventListener('click', async () => {
     fallback.hidden = true;
     say(
       sentences(
-        tn('craCopied', payload.rows.length, month, formatNumber(hours)),
+        tn('craCopied', payload.rows.length, monthName(month), formatNumber(hours)),
         skipped && tn('incompleteSkipped', skipped),
         t('craPasteHint')
       )
@@ -800,7 +809,7 @@ $('copy-admin').addEventListener('click', async () => {
     fallback.hidden = true;
     say(
       sentences(
-        tn('adminCopied', rows.length, month),
+        tn('adminCopied', rows.length, monthName(month)),
         skipped && tn('incompleteSkipped', skipped),
         internal && tn('internalLeftOut', internal),
         t('adminPasteHint')
@@ -914,7 +923,7 @@ $('inject').addEventListener('click', async () => {
     if (!res?.ok) throw new Error(res?.error || t('noResponse'));
     const bad = res.report.filter((r) => !r.ok);
     if (bad.length) {
-      const failures = bad.map((b) => `${b.client} -> ${b.error}`).join('; ');
+      const failures = semicolons(bad.map((b) => `${b.client} -> ${b.error}`));
       say(t('injectPartial', res.prepared, res.total, failures), true);
     } else {
       const comments = res.report.reduce((sum, r) => sum + (r.comments || 0), 0);
