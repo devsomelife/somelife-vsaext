@@ -65,6 +65,7 @@ Une page VSA sans aucune ligne convient : l'extension en ajoute une avec le bout
 ### Saisie au quotidien
 
 - **Ajouter une ligne** ajoute une ligne, datée du lendemain de la précédente et reprenant le même client et le même projet : une semaine se saisit en quelques clics.
+- Le bouton **+** de l'en-tête d'une journée ajoute une ligne à cette journée, pour y répartir le temps entre plusieurs projets. La ligne reprend ce qu'il reste de la journée ; le client et le projet sont à choisir.
 - Choisissez le **client**, puis le **projet**. La liste des projets ne propose que ceux du client retenu.
 - Pour une journée d'école, de formation ou d'intercontrat, choisissez l'activité dans le groupe **Activités internes**, en bas de la liste des clients : le projet reste vide.
 - **Jours** avance par huitièmes : `0,125` vaut une heure, `0,5` une demi-journée, `1` une journée complète.
@@ -139,6 +140,7 @@ Le classeur `CRA-Equipe.xlsx` de l'équipe reçoit vos journées avant leur repo
 | Bouton | Rôle |
 | --- | --- |
 | **Ajouter une ligne** | Ajoute une ligne au mois affiché. |
+| **+** (en-tête d'une journée) | Ajoute une ligne à cette journée. |
 | **Saisir une plage** | Ouvre le formulaire de saisie sur une plage de dates : une ligne par jour, hors week-ends et jours fériés sauf si vous les incluez. |
 | **Exporter en JSON** | Sauvegarde complète : tous les mois, votre liste de clients et vos jours fériés. C'est le fichier que relit **Importer un JSON**. |
 | **Exporter en CSV** | Le mois affiché sous forme de tableur, pour consultation ou partage. Non réimportable. |

@@ -309,6 +309,9 @@
   "addRow": {
     "message": "Add row"
   },
+  "addRowToDay": {
+    "message": "Add a row to this day"
+  },
   "addRange": {
     "message": "Add range"
   },
