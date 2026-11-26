@@ -309,6 +309,9 @@
   "addRow": {
     "message": "Ajouter une ligne"
   },
+  "addRowToDay": {
+    "message": "Ajouter une ligne à cette journée"
+  },
   "addRange": {
     "message": "Saisir une plage"
   },

@@ -28,6 +28,7 @@ import {
   dayStatus,
   summarizeDays,
   rangeEntries,
+  dayEntry,
 } from '../shared/store.js';
 import {
   DEFAULT_HOLIDAY_SETTINGS,
@@ -300,6 +301,8 @@ function dayLabel(date) {
 }
 
 // Built with textContent rather than innerHTML: the header needs no markup.
+// The + button adds a row to that day, which Add row cannot do: it always moves
+// on to the day after the last one.
 function dayHeaderRow(day) {
   const tr = document.createElement('tr');
   const th = document.createElement('th');
@@ -310,9 +313,31 @@ function dayHeaderRow(day) {
     span.className = `day-${part}`;
     th.append(span);
   }
+  const add = document.createElement('button');
+  add.type = 'button';
+  add.className = 'day-add';
+  add.textContent = '+';
+  add.title = t('addRowToDay');
+  add.setAttribute('aria-label', t('addRowToDay'));
+  add.addEventListener('click', () => addRowToDay(tr.dataset.date));
+  th.append(add);
   tr.append(th);
   fillDayHeader(tr, day);
   return tr;
+}
+
+// The new row goes last in its day, and its client takes the focus so the row
+// can be filled from the keyboard.
+function addRowToDay(date) {
+  const day = groupByDay(entries).find((d) => d.date === date);
+  entries.push(dayEntry(date, day?.total ?? 0));
+  persist();
+  render();
+  let tr = rowsEl.querySelector(`tr.day-group[data-date="${date}"]`);
+  while (tr?.nextElementSibling && !tr.nextElementSibling.classList.contains('day-group')) {
+    tr = tr.nextElementSibling;
+  }
+  tr?.querySelector('[data-f="client"]')?.focus();
 }
 
 function fillDayHeader(tr, day) {

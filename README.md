@@ -87,7 +87,8 @@ The **Open** button next to each address opens it in a new tab.
   - walks every client in the activity dropdown and records its project list
   - also records internal activities (Formation, Alternance Ecole, Intercontrat...), listed after the clients, without projects; Absence stays in VSA
   - works on a page without any line: it adds one with `+`, leaves it empty and unsaved, and injection reuses it
-- **Add row** fills the month grid. Entries are grouped under a header row per day, showing the day's total out of 1 and its status: complete, missing some time, or over one day. The footer counts complete, partial and over days.
+- **Add row** fills the month grid, each new row dated the day after the last one. The **+** button in a day's header adds a row to that day instead, preset to what is left of the day.
+- Entries are grouped under a header row per day, showing the day's total out of 1 and its status: complete, missing some time, or over one day. The footer counts complete, partial and over days.
 - **Inject this month into VSA** writes the entries into the VSA grid in two passes:
   1. **Structure**: one timesheet line per client/project pair, with both dropdowns selected. This is the slow part, since each client change round-trips to VSA for its project list. An internal activity line gets the activity only, once VSA has reloaded the line's unit.
   2. **Time**: writes the day cells, plus the day comments when enabled. Local and instant.

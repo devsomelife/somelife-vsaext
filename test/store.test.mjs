@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayStatus, groupByDay, summarizeDays, isComplete, rangeEntries } from '../src/shared/store.js';
+import { dayStatus, groupByDay, summarizeDays, isComplete, rangeEntries, dayEntry } from '../src/shared/store.js';
 
 test('an internal activity row is complete without a project, a client row still needs one', () => {
   const base = { date: '2026-09-07', days: 1, note: '' };
@@ -80,4 +80,16 @@ test('a range makes one independent entry per date', () => {
   const internal = rangeEntries({ client: 'Formation', project: '', internal: true, days: 1 }, ['2026-09-01']);
   assert.equal(internal[0].internal, true);
   assert.equal(isComplete(internal[0]), true);
+});
+
+test('a row added to a day takes what is left of it, with no client or project', () => {
+  assert.deepEqual(dayEntry('2026-09-08', 0.5), {
+    date: '2026-09-08', client: '', project: '', projectCode: '', days: 0.5, note: '',
+  });
+  // Float sums: 0.1 + 0.2 leaves 0.7, not 0.7000000000000001.
+  assert.equal(dayEntry('2026-09-08', 0.1 + 0.2).days, 0.7);
+  // A full or overbooked day gives an empty row, which stays incomplete.
+  assert.equal(dayEntry('2026-09-08', 1).days, 0);
+  assert.equal(dayEntry('2026-09-08', 1.25).days, 0);
+  assert.equal(isComplete(dayEntry('2026-09-08', 1)), false);
 });

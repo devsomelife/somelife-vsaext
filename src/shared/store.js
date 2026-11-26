@@ -93,6 +93,16 @@ export function isComplete(entry) {
   return Boolean(entry.date && line && entry.days > 0);
 }
 
+// A blank row for a day that already has entries, added from that day's header.
+// It takes what is left of the day, so a second row on a half day is the other
+// half; a full day gets 0 and the row stays incomplete until it is filled.
+// Client and project are left empty: another row on the same day is by
+// definition another line.
+export function dayEntry(date, total) {
+  const left = Number((1 - (Number(total) || 0)).toFixed(3));
+  return { date, client: '', project: '', projectCode: '', days: Math.max(0, left), note: '' };
+}
+
 // One entry per date, copied from a template row: the range entry. Each is its
 // own object, so editing one row later leaves the others alone.
 export function rangeEntries(template, dates) {
